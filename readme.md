@@ -23,6 +23,12 @@ If you want to download the dataset, you can do so in the DocVQA challenge in th
 | DUDE 		      | [Link](https://rrc.cvc.uab.es/?ch=23&com=downloads)	                           |
 | DocILE-ELSA | [Link](https://cvcuab-my.sharepoint.com/:u:/g/personal/rperez_cvc_uab_cat/EVx-UEC2RA1IlgJft5sqZt0B0ldjxJKloO6nlsQT7mrZrw?e=JXIhqL) |
 
+## DocILE-ELSA models weights:
+
+| Model 		    | Weights HF name								                                                    | Parameters 	|
+|:-----------------|:--------------------------------------------------------------------------------------------------|:-------------:|
+| VT5 base			| [rubentito/vt5-base-docile-elsa]([rubentito/vt5-base-docile-elsa](https://huggingface.co/rubentito/vt5-base-docile-elsa))		            |  			| 
+
 ## Metrics
 
 **Average Normalized Levenshtein Similarity (ANLS)** <br>
