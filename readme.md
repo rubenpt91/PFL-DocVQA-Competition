@@ -1,4 +1,4 @@
-# Hierarchical multimodal transformers for Multipage DocVQA
+# PFL-DocVQA Competition
 
 This repository is inteded to provide a base framework and method for the [PFL-DocVQA Competition](http://158.109.8.94/?ch=2&com=introduction). 
 The repository is a simplified branch of the [MP-DocVQA framework](https://github.com/rubenpt91/MP-DocVQA-Framework), even though we have reduced the complexity of this, traces of the original code may remain.
