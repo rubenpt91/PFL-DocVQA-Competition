@@ -1,4 +1,4 @@
-name: mp_docvqa
+name: pfl_docvqa
 channels:
   - pytorch
   - nvidia
@@ -15,6 +15,7 @@ dependencies:
   - sentencepiece
   - transformers=4.26.1
   - editdistance
+  - flwr=1.4.0
 
 # conda install pytorch torchvision cudatoolkit=11.2 -c pytorch
 # conda install transformers -c huggingface
