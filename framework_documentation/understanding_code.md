@@ -10,29 +10,15 @@ It's quite straight-forward and self-explanatory:
 ```maarkdown
 ├── configs
 │   ├── datasets
-│   │   ├── SP-DocVQA.yml
-│   │   ├── MP-DocVQA.yml
-│   │   └── DUDE.yml
+│   │   └── DocILE_ELSA.yml
 │   └── models
-│       ├── BertQA.yml
-│       ├── Longformer.yml
-│       ├── BigBird.yml
-│       ├── LayoutLMv2.yml
-│       ├── LayoutLMv3.yml
 │       ├── T5.yml
-│       └── HiVT5.yml
+│       └── VT5.yml
 ├── datasets
-│   ├── SP_DocVQA.py
-│   ├── MP_DocVQA.py
-│   └── DUDE.py
+│   └── DocILE_ELSA.yml
 ├── models
-│   ├── BertQA.py
-│   ├── Longformer.py
-│   ├── BigBird.py
-│   ├── LayoutLMv2.py
-│   ├── LayoutLMv3.py
 │   ├── T5.py
-│   └── HiVT5.py
+│   └── VT5.py
 ├── readme.md
 ├── environment.yml
 ├── utils.py
@@ -41,14 +27,7 @@ It's quite straight-forward and self-explanatory:
 ├── checkpoint.py
 ├── train.py
 ├── eval.py
-├── metrics.py
-└── visualization
-    ├── fonts
-    │   └── Arial.ttf
-    ├── plot_attention_graphics.py
-    ├── plot_enc_attention_img.py
-    ├── store_attentions.py
-    └── vis_utils.py
+└── metrics.py
 
 ```
 

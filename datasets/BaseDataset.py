@@ -8,7 +8,7 @@ from torch.utils.data import Dataset
 import utils
 
 
-class MPDocVQA(Dataset):
+class BaseDataset(Dataset):
 
     def __init__(self, imbd_dir, images_dir, page_retrieval, split, kwargs):
         data = np.load(os.path.join(imbd_dir, "imdb_{:s}.npy".format(split)), allow_pickle=True)
@@ -21,9 +21,9 @@ class MPDocVQA(Dataset):
         self.max_answers = 2
         self.images_dir = images_dir
 
-        self.use_images = kwargs.get('use_images', False)
-        self.get_raw_ocr_data = kwargs.get('get_raw_ocr_data', False)
-        self.max_pages = kwargs.get('max_pages', 1)
+        self.use_images = getattr(kwargs, 'use_images', False)
+        self.get_raw_ocr_data = getattr(kwargs, 'get_raw_ocr_data', False)
+        self.max_pages = getattr(kwargs, 'max_pages', 1)
         self.get_doc_id = False
 
     def __len__(self):
@@ -82,13 +82,6 @@ class MPDocVQA(Dataset):
                 for p in range(num_pages):
                     words.extend([word.lower() for word in record['ocr_tokens'][p]])
 
-                    """
-                    mod_boxes = record['ocr_normalized_boxes'][p]
-                    mod_boxes[:, 1] = mod_boxes[:, 1]/num_pages + p/num_pages
-                    mod_boxes[:, 3] = mod_boxes[:, 3]/num_pages + p/num_pages
-
-                    boxes.extend(mod_boxes)  # bbox in l,t,r,b
-                    """
                 # boxes = np.array(boxes)
                 boxes = record['ocr_normalized_boxes']
 
@@ -163,7 +156,7 @@ class MPDocVQA(Dataset):
                        'answers': answers,
                        'answer_page_idx': answer_page_idx,
                        'num_pages': num_pages
-                       }
+                    }
 
         if self.use_images:
             sample_info['image_names'] = image_names
@@ -184,18 +177,23 @@ class MPDocVQA(Dataset):
 
     def _get_start_end_idx(self, context, answers):
 
-        answer_positions = []
-        for answer in answers:
-            start_idx = context.find(answer)
+        if answers is None:
+            start_idx = [0 for _ in range(len(context))]
+            end_idx = [0 for _ in range(len(context))]
 
-            if start_idx != -1:
-                end_idx = start_idx + len(answer)
-                answer_positions.append([start_idx, end_idx])
-
-        if len(answer_positions) > 0:
-            start_idx, end_idx = random.choice(answer_positions)  # If both answers are in the context. Choose one randomly.
         else:
-            start_idx, end_idx = 0, 0  # If the indices are out of the sequence length they are ignored. Therefore, we set them as a very big number.
+            answer_positions = []
+            for answer in answers:
+                start_idx = context.find(answer)
+
+                if start_idx != -1:
+                    end_idx = start_idx + len(answer)
+                    answer_positions.append([start_idx, end_idx])
+
+            if len(answer_positions) > 0:
+                start_idx, end_idx = random.choice(answer_positions)  # If both answers are in the context. Choose one randomly.
+            else:
+                start_idx, end_idx = 0, 0  # If the indices are out of the sequence length they are ignored. Therefore, we set them as a very big number.
 
         return start_idx, end_idx
 
@@ -222,6 +220,7 @@ class MPDocVQA(Dataset):
             except:
                 assert (answer_page in range(first_page, last_page))  # answer page is in selected range.
                 assert (last_page - first_page == self.max_pages)  # length of selected range is correct.
+
         # print("[{:d} <= {:d} < {:d}][{:d} + {:d}]".format(first_page, answer_page, last_page, len(range(first_page, last_page)), padding_pages))
         assert(answer_page in range(first_page, last_page))
         assert(first_page >= 0)
@@ -236,5 +235,4 @@ def mpdocvqa_collate_fn(batch):  # It's actually the same as in SP-DocVQA...
 
 
 if __name__ == '__main__':
-
-    mp_docvqa = MPDocVQA("/SSD/Datasets/DocVQA/Task1/pythia_data/imdb/collection", split='val')
+    base_dataset = BaseDataset("/SSD/Datasets/DocVQA/Task1/pythia_data/imdb/collection", split='val')
