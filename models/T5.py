@@ -7,10 +7,10 @@ import transformers.models.t5.modeling_t5
 
 class T5:
     def __init__(self, config):
-        self.batch_size = config['batch_size']
-        self.tokenizer = T5Tokenizer.from_pretrained(config['model_weights'])
-        self.model = T5ForConditionalGeneration.from_pretrained(config['model_weights'])
-        self.page_retrieval = config['page_retrieval'].lower() if 'page_retrieval' in config else None
+        self.batch_size = config.batch_size
+        self.tokenizer = T5Tokenizer.from_pretrained(config.model_weights)
+        self.model = T5ForConditionalGeneration.from_pretrained(config.model_weights)
+        self.page_retrieval = config.page_retrieval.lower() if 'page_retrieval' in config else None
 
     def parallelize(self):
         self.model = nn.DataParallel(self.model)

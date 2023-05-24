@@ -10,13 +10,15 @@ To use the framework please check [How to use](framework_documentation/how_to_us
 
 ## Dataset
 
-Dataset Description.
+[TODO] Dataset Description.
 
 If you want to download the dataset, you can do so in the [ELSA Benchmarks Competition platform](http://158.109.8.94/?ch=2&com=introduction). For this framework, you will need to download the IMDBs (which contains processed QAs and OCR) and the images. All the downloads must be performed through the RRC portal.
 
 | Dataset 		   | Link	                                                                          |
 |--------------|--------------------------------------------------------------------------------|
-| DocILE-ELSA | [Link](https://cvcuab-my.sharepoint.com/:u:/g/personal/rperez_cvc_uab_cat/EVx-UEC2RA1IlgJft5sqZt0B0ldjxJKloO6nlsQT7mrZrw?e=JXIhqL) |
+| DocILE-ELSA | [Link](https://cvcuab-my.sharepoint.com/:u:/g/personal/rperez_cvc_uab_cat/EZEYu8DpG2FJhnh9LD0PPpUBmpaWP67QrGwYJJ4jo88cQQ?e=XPOmDC) |
+
+In addition, if you need the images. We will need to download the original dataset from the [DocILE Challenge](https://rrc.cvc.uab.es/?ch=26downloads).
 
 ## DocILE-ELSA models weights
 
