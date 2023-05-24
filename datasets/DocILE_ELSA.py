@@ -4,10 +4,10 @@ import utils
 from PIL import Image
 
 import numpy as np
-from datasets.MP_DocVQA import MPDocVQA
+from datasets.BaseDataset import BaseDataset
 
 
-class DocILE_ELSA(MPDocVQA):
+class DocILE_ELSA(BaseDataset):
 
     def __init__(self, imbd_dir, images_dir, page_retrieval, split, kwargs):
 
