@@ -4,6 +4,7 @@ from tqdm import tqdm
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
+from datasets.BaseDataset import collate_fn
 
 from logger import Logger
 from metrics import Evaluator
@@ -105,7 +106,7 @@ def main_eval(local_rank, config):
         sampler = None
         pin_memory = False
 
-    val_data_loader = DataLoader(dataset, batch_size=config.batch_size, shuffle=False, collate_fn=singlepage_docvqa_collate_fn, pin_memory=pin_memory, sampler=sampler)
+    val_data_loader = DataLoader(dataset, batch_size=config.batch_size, shuffle=False, collate_fn=collate_fn, pin_memory=pin_memory, sampler=sampler)
 
     model = build_model(config)
 
@@ -181,17 +182,13 @@ if __name__ == '__main__':
             # net = Net().to(DEVICE)
             model = build_model(config)  # TODO Should already be in CUDA
 
-            import warnings
-            warnings.warn('fasdfasda \n\n\n\n afsdfasdfsadf')
-
-
             # Load data (CIFAR-10)
             # Note: each client gets a different trainloader/valloader, so each client
             # will train and evaluate on their own unique data
             # trainloader = trainloaders[int(cid)]
             # valloader = valloaders[int(cid)]
             dataset = build_dataset(config, 'test')
-            val_data_loader = DataLoader(dataset, batch_size=config.batch_size, shuffle=False, collate_fn=singlepage_docvqa_collate_fn)
+            val_data_loader = DataLoader(dataset, batch_size=config.batch_size, shuffle=False, collate_fn=collate_fn)
 
             return FlowerClient(model, val_data_loader, val_data_loader)
 

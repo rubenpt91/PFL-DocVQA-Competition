@@ -27,7 +27,7 @@ class BaseDataset(Dataset):
         self.get_doc_id = False
 
     def __len__(self):
-        return len(self.imdb)
+        return 10  # len(self.imdb)
 
     def sample(self, idx=None, question_id=None):
 
@@ -229,7 +229,7 @@ class BaseDataset(Dataset):
         return first_page, last_page
 
 
-def mpdocvqa_collate_fn(batch):  # It's actually the same as in SP-DocVQA...
+def collate_fn(batch):
     batch = {k: [dic[k] for dic in batch] for k in batch[0]}  # List of dictionaries to dict of lists.
     return batch
 
