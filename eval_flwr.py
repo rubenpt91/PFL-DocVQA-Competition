@@ -171,8 +171,9 @@ if __name__ == '__main__':
 
             def evaluate(self, parameters, config):
                 set_parameters(self.model, parameters)
+                evaluator = Evaluator(case_sensitive=False)
                 # loss, accuracy = test(self.model, self.valloader)
-                loss, accuracy = evaluate(self.model, self.valloader)
+                loss, accuracy = evaluate(self.valloader, self.model, evaluator, config)  # data_loader, model, evaluator, **kwargs
                 return float(loss), len(self.valloader), {"accuracy": float(accuracy)}
 
         def client_fn(node_id):
