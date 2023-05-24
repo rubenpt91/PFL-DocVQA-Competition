@@ -170,7 +170,6 @@ if __name__ == '__main__':
                 return get_parameters(self.model), len(self.trainloader), {}
 
             def evaluate(self, parameters, config):
-                a = c
                 set_parameters(self.model, parameters)
                 # loss, accuracy = test(self.model, self.valloader)
                 loss, accuracy = evaluate(self.model, self.valloader)
@@ -219,11 +218,13 @@ if __name__ == '__main__':
             client_resources=client_resources,
         )
 
+    """
     if config.distributed:
         torch.multiprocessing.spawn(main_eval, nprocs=config.num_gpus, args=(config,))
 
     else:
         main_eval(config)
+    """
     # start_time = time.time()
 
     # dataset = build_dataset(config, 'test')
