@@ -99,10 +99,10 @@ if __name__ == '__main__':
     logger.log_val_metrics(accuracy, anls, answ_page_pred_acc, update_best=False)
 
     save_data = {
-        "Model": config["model_name"],
-        "Model_weights": config["model_weights"],
-        "Dataset": config["dataset_name"],
-        "Page retrieval": config.get('page_retrieval', '-').capitalize(),
+        "Model": config.model_name,
+        "Model_weights": config.model_weights,
+        "Dataset": config.dataset_name,
+        "Page retrieval": getattr(config, 'page_retrieval', '-').capitalize(),
         "Inference time": inf_time,
         "Mean accuracy": accuracy,
         "Mean ANLS": anls,
@@ -111,7 +111,11 @@ if __name__ == '__main__':
     }
 
     experiment_date = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-    results_file = os.path.join(config['save_dir'], 'results', "{:}_{:}_{:}__{:}.json".format(config['model_name'], config['dataset_name'], config.get('page_retrieval', '').lower(), experiment_date))
+    results_file = os.path.join(config.save_dir, 'results', "{:}_{:}_{:}__{:}.json".format(config.model_name, config.dataset_name, getattr(config, 'page_retrieval', '').lower(), experiment_date))
+
+    if not os.path.isdir(('/').join(results_file.split('/')[:-1])):
+        os.makedirs(('/').join(results_file.split('/')[:-1]))
+
     save_json(results_file, save_data)
 
     print("Results correctly saved in: {:s}".format(results_file))

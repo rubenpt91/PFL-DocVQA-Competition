@@ -154,6 +154,16 @@ if __name__ == '__main__':
         import flwr as fl
         from utils_parallel import get_parameters, set_parameters, weighted_average
 
+
+        def weighted_average(metrics):
+            print(metrics)
+            # Multiply accuracy of each client by number of examples used
+            accuracies = [num_examples * m["accuracy"] for num_examples, m in metrics]
+            examples = [num_examples for num_examples, _ in metrics]
+
+            # Aggregate and return custom metric (weighted average)
+            return {"accuracy": sum(accuracies) / sum(examples)}
+
         class FlowerClient(fl.client.NumPyClient):
             def __init__(self, model, trainloader, valloader):
                 self.model = model
@@ -173,8 +183,8 @@ if __name__ == '__main__':
                 set_parameters(self.model, parameters)
                 evaluator = Evaluator(case_sensitive=False)
                 # loss, accuracy = test(self.model, self.valloader)
-                loss, accuracy = evaluate(self.valloader, self.model, evaluator, config)  # data_loader, model, evaluator, **kwargs
-                return float(loss), len(self.valloader), {"accuracy": float(accuracy)}
+                total_accuracies, total_anls, total_ret_prec, all_pred_answers, scores_by_samples = evaluate(self.valloader, self.model, evaluator, config)  # data_loader, model, evaluator, **kwargs
+                return float(0), len(self.valloader), {"accuracy": float(accuracy)}
 
         def client_fn(node_id):
             """Create a Flower client representing a single organization."""
@@ -201,7 +211,7 @@ if __name__ == '__main__':
             min_fit_clients=NUM_CLIENTS,  # Never sample less than 10 clients for training
             min_evaluate_clients=NUM_CLIENTS,  # Never sample less than 5 clients for evaluation
             min_available_clients=NUM_CLIENTS,  # Wait until all 10 clients are available
-            evaluate_metrics_aggregation_fn=weighted_average
+            evaluate_metrics_aggregation_fn=weighted_average,  # <-- pass the metric aggregation function
         )
 
         # Specify client resources if you need GPU (defaults to 1 CPU and 0 GPU)
