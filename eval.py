@@ -4,6 +4,7 @@ from tqdm import tqdm
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
+from datasets.BaseDataset import collate_fn
 
 from logger import Logger
 from metrics import Evaluator
@@ -83,7 +84,7 @@ if __name__ == '__main__':
     start_time = time.time()
 
     dataset = build_dataset(config, 'test')
-    val_data_loader = DataLoader(dataset, batch_size=config['batch_size'], shuffle=False, collate_fn=singlepage_docvqa_collate_fn)
+    val_data_loader = DataLoader(dataset, batch_size=config.batch_size, shuffle=False, collate_fn=collate_fn)
 
     model = build_model(config)
 

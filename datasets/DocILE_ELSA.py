@@ -121,7 +121,7 @@ class DocILE_ELSA(BaseDataset):
 
         sample_info = {
             # 'question_id': "{:s}_{:d}".format(record['set_name'], idx),
-            'question_id': record['question_id'],
+            'question_id': record.get('question_id', "{:s}-{:d}".format(record['set_name'], idx)),
             'questions': question,
             'contexts': context,
             'context_page_corresp': context_page_corresp,

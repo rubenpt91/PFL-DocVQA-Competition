@@ -12,7 +12,7 @@ from utils import parse_args, time_stamp_to_hhmmss, load_config, save_json
 from build_utils import build_model, build_dataset
 
 
-def evaluate(data_loader, model, evaluator, **kwargs):
+def evaluate(data_loader, model, evaluator, kwargs):
 
     return_scores_by_sample = kwargs.get('return_scores_by_sample', False)
     return_answers = kwargs.get('return_answers', False)
