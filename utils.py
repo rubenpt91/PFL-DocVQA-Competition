@@ -27,11 +27,10 @@ def parse_args():
     parser.add_argument('--save-dir', type=str, help='Seed to allow reproducibility.')
 
     # Flower
-    parser.add_argument('--flower', action='store_true', default=False, help='Use FL Flower')
-    parser.add_argument('--num_clients', type=int, help='Number of clients for FL')
+    parser.add_argument('--flower', action='store_true', default=False, help='Use FL Flower.')
+    parser.add_argument('--num_clients', type=int, help='Number of clients for FL.')
+    parser.add_argument('--num_rounds', type=int, help='Number of FL rounds.')
 
-    # parser.add_argument('--data-parallel', action='store_true', help='Boolean to overwrite data-parallel arg in config parallelize the execution.')
-    # parser.add_argument('--no-data-parallel', action='store_false', dest='data_parallel', help='Boolean to overwrite data-parallel arg in config to indicate to parallelize the execution.')
     return parser.parse_args()
 
 
@@ -105,6 +104,10 @@ def check_config(config):
 
     elif page_retrieval == 'none' and config.dataset_name not in ['SP-DocVQA']:
         print("Page retrieval can't be none for dataset '{:s}'. This is intended only for single page datasets. Please specify in the method config file the 'page_retrieval' setup to one of the following: [oracle, concat, logits, custom] ".format(config.dataset_name))
+
+    if not config.flower:
+        if config.num_clients > 1:
+            raise ValueError("Number of clients '{:d}' but Flower framework is not activated. Please, indicate 'flower' in arguments if you want to use Federated Learning.".format(config.num_clients))
 
     if 'save_dir' in config:
         if not config.save_dir.endswith('/'):

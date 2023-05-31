@@ -173,8 +173,8 @@ if __name__ == '__main__':
 
         # Create FedAvg strategy
         strategy = fl.server.strategy.FedAvg(
-            fraction_fit=0,  # Sample 100% of available clients for training
-            fraction_evaluate=0.5,  # Sample 50% of available clients for evaluation
+            fraction_fit=1,  # Sample 100% of available clients for training
+            fraction_evaluate=1,  # Sample 50% of available clients for evaluation
             min_fit_clients=NUM_CLIENTS,  # Never sample less than 10 clients for training
             min_evaluate_clients=NUM_CLIENTS,  # Never sample less than 5 clients for evaluation
             min_available_clients=NUM_CLIENTS,  # Wait until all 10 clients are available
@@ -191,7 +191,7 @@ if __name__ == '__main__':
         fl.simulation.start_simulation(
             client_fn=client_fn,
             num_clients=NUM_CLIENTS,
-            config=fl.server.ServerConfig(num_rounds=5),
+            config=fl.server.ServerConfig(num_rounds=config.num_rounds),
             strategy=strategy,
             client_resources=client_resources,
         )
