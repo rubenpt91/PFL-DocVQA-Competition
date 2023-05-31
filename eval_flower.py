@@ -154,9 +154,10 @@ if __name__ == '__main__':
         import flwr as fl
         from utils_parallel import get_parameters, set_parameters, weighted_average
 
-
+        import warnings
         def weighted_average(metrics):
-            print(metrics)
+            warnings.warn(str(metrics))
+
             # Multiply accuracy of each client by number of examples used
             accuracies = [num_examples * m["accuracy"] for num_examples, m in metrics]
             examples = [num_examples for num_examples, _ in metrics]
@@ -184,7 +185,7 @@ if __name__ == '__main__':
                 evaluator = Evaluator(case_sensitive=False)
                 # loss, accuracy = test(self.model, self.valloader)
                 total_accuracies, total_anls, total_ret_prec, all_pred_answers, scores_by_samples = evaluate(self.valloader, self.model, evaluator, config)  # data_loader, model, evaluator, **kwargs
-                return float(0), len(self.valloader), {"accuracy": float(accuracy)}
+                return float(0), len(self.valloader), {"accuracy": float(total_accuracies), "total_anls": total_anls}
 
         def client_fn(node_id):
             """Create a Flower client representing a single organization."""
@@ -206,7 +207,7 @@ if __name__ == '__main__':
 
         # Create FedAvg strategy
         strategy = fl.server.strategy.FedAvg(
-            fraction_fit=1.0,  # Sample 100% of available clients for training
+            fraction_fit=0,  # Sample 100% of available clients for training
             fraction_evaluate=0.5,  # Sample 50% of available clients for evaluation
             min_fit_clients=NUM_CLIENTS,  # Never sample less than 10 clients for training
             min_evaluate_clients=NUM_CLIENTS,  # Never sample less than 5 clients for evaluation
@@ -284,5 +285,11 @@ if __name__ == '__main__':
     # save_json(results_file, save_data)
     #
     # print("Results correctly saved in: {:s}".format(results_file))
+
+
+
+    # Centralized evaluation
+    # If fraction_evaluate is set to 0.0, federated evaluation will be disabled.
+    # https://flower.dev/docs/evaluation.html
 
 

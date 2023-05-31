@@ -11,7 +11,12 @@ import utils
 class BaseDataset(Dataset):
 
     def __init__(self, imbd_dir, images_dir, page_retrieval, split, kwargs):
-        data = np.load(os.path.join(imbd_dir, "imdb_{:s}.npy".format(split)), allow_pickle=True)
+
+        if 'node_id' not in kwargs:
+            data = np.load(os.path.join(imbd_dir, "imdb_{:s}.npy".format(split)), allow_pickle=True)
+        else:
+            data = np.load(os.path.join(imbd_dir, "imdb_{:s}_c{:d}.npy".format(split, kwargs['node_id'])), allow_pickle=True)
+
         self.header = data[0]
         self.imdb = data[1:]
 

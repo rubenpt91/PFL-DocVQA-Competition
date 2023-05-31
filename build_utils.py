@@ -37,7 +37,7 @@ def build_model(config):
     return model
 
 
-def build_dataset(config, split):
+def build_dataset(config, split, node_id=None):
 
     # Specify special params for data processing depending on the model used.
     dataset_kwargs = {}
@@ -47,6 +47,9 @@ def build_dataset(config, split):
 
     if config.model_name.lower() in ['vt5']:
         dataset_kwargs['use_images'] = True
+
+    if node_id:
+        dataset_kwargs['node_id'] = node_id
 
     # Build dataset
     if config.dataset_name == 'DocILE-ELSA':
