@@ -106,7 +106,7 @@ def check_config(config):
         print("Page retrieval can't be none for dataset '{:s}'. This is intended only for single page datasets. Please specify in the method config file the 'page_retrieval' setup to one of the following: [oracle, concat, logits, custom] ".format(config.dataset_name))
 
     if not config.flower:
-        if config.num_clients > 1:
+        if 'num_clients' in config and config.num_clients > 1:
             raise ValueError("Number of clients '{:d}' but Flower framework is not activated. Please, indicate 'flower' in arguments if you want to use Federated Learning.".format(config.num_clients))
 
     if 'save_dir' in config:
