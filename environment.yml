@@ -8,12 +8,12 @@ channels:
 dependencies:
   - wandb
   - python
-  - pytorch=1.10
-  - torchvision
-  - torchaudio
+  - pytorch::pytorch=1.10
+  - pytorch::torchvision
+  - pytorch::torchaudio
   - cudatoolkit=11.0
   - sentencepiece
-  - transformers=4.26.1
+  - huggingface::transformers=4.26.1
   - editdistance
   - flwr=1.4.0
 
