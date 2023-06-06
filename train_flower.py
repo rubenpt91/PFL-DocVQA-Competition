@@ -1,19 +1,21 @@
 import os
+from collections import OrderedDict
+
 import flwr as fl
 import numpy as np
+import torch
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from torch.utils.data import DataLoader
-
+from build_utils import build_dataset, build_model, build_optimizer
+from checkpoint import save_model
+from communication.log_communication import log_communication
 from datasets.BaseDataset import collate_fn
 from eval_flower import evaluate
-from metrics import Evaluator
-from build_utils import build_model, build_optimizer, build_dataset
-from utils import parse_args, load_config, seed_everything
-from utils_parallel import get_parameters, set_parameters, weighted_average
-
 from logger import Logger
-from checkpoint import save_model
+from metrics import Evaluator
+from utils import load_config, parse_args, seed_everything
+from utils_parallel import get_parameters, weighted_average
 
 
 def train_epoch(data_loader, model, optimizer, lr_scheduler, evaluator, logger):
@@ -108,7 +110,7 @@ def train(model, config):
 
 
 class FlowerClient(fl.client.NumPyClient):
-    def __init__(self, model, trainloader, valloader, optimizer, lr_scheduler, evaluator, logger, config):
+    def __init__(self, model, trainloader, valloader, optimizer, lr_scheduler, evaluator, logger, config, cid):
         self.model = model
         self.trainloader = trainloader
         self.valloader = valloader
@@ -118,18 +120,27 @@ class FlowerClient(fl.client.NumPyClient):
         self.logger = logger
         self.logger.log_model_parameters(self.model)
         self.config = config
+        self.cid = cid
 
     def get_parameters(self, config):
-        return get_parameters(self.model)
+        parameters = get_parameters(self.model)
+        log_communication(federated_round=42, sender=self.cid, receiver=-1, data=parameters, log_location="communication_log.csv")
+        return parameters
 
     def fit(self, parameters, config):
-        set_parameters(self.model, parameters)
+        self.set_parameters(self.model, parameters)
         train_loss = train_epoch(self.trainloader, self.model, self.optimizer, self.lr_scheduler, self.evaluator, self.logger)
 
         return get_parameters(self.model), len(self.trainloader), {}
 
+    def set_parameters(self, model, parameters):
+        params_dict = zip(model.model.state_dict().keys(), parameters)
+        state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
+        log_communication(federated_round=42, sender=-1, receiver=self.cid, data=parameters, log_location="communication_log.csv")
+        model.model.load_state_dict(state_dict, strict=True)
+
     def evaluate(self, parameters, config):
-        set_parameters(self.model, parameters)
+        self.set_parameters(self.model, parameters)
         # loss, accuracy = test(self.model, self.valloader)
         # accuracy, anls, ret_prec, _, _ = evaluate(self.valloader, self.model, self.evaluator, return_scores_by_sample=False, return_pred_answers=False, **config)
         accuracy, anls, ret_prec, _, _ = evaluate(self.valloader, self.model, self.evaluator, config)  # data_loader, model, evaluator, **kwargs
@@ -150,7 +161,7 @@ def client_fn(node_id):
     optimizer, lr_scheduler = build_optimizer(model, length_train_loader=len(train_data_loader), config=config)
     evaluator = Evaluator(case_sensitive=False)
     logger = Logger(config=config)
-    return FlowerClient(model, val_data_loader, val_data_loader, optimizer, lr_scheduler, evaluator, logger, config)
+    return FlowerClient(model, val_data_loader, val_data_loader, optimizer, lr_scheduler, evaluator, logger, config, node_id)
 
 
 if __name__ == '__main__':

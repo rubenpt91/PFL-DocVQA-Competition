@@ -1,4 +1,3 @@
-import sys
 import torch
 
 def get_bytes_for_tensor(tensor : torch.Tensor):

@@ -1,3 +1,5 @@
+from communication.compute_tensor_size import get_bytes_for_tensor
+import numpy as np
 
 def log_communication(federated_round : int, sender : int, receiver: int, data : list, log_location: str):
     """
@@ -21,16 +23,14 @@ def log_communication(federated_round : int, sender : int, receiver: int, data :
     ValueError
         Raise if the federated round, sender or receiver have invalid IDs.
     """    
-    if sender < -1 or receiver < -1:
+    if int(sender) < -1 or int(receiver) < -1:
         raise ValueError("The ID of the receiver or sender is smaller than -1 and thus invalid.")
-    if federated_round < 0:
+    if int(federated_round) < 0:
         raise ValueError("The ID of federated round is negative which is invalid.")
     
-
-    amount_of_bytes = 42
-    _save_row_to_csv([federated_round, sender, receiver, amount_of_bytes], path=log_location)
-    raise NotImplementedError("Computation of amount_of_bytes is not implemented yet.")
-    
+    print([x.dtype for x in data if x.dtype != np.float32])
+    amount_of_bytes = sum([get_bytes_for_tensor(p) for p in data])
+    _save_row_to_csv([federated_round, sender, receiver, amount_of_bytes], path=log_location)    
 
 def _save_row_to_csv(row : list, path : str):
     """
@@ -49,7 +49,8 @@ def _save_row_to_csv(row : list, path : str):
         Raise if path is None.
     """    
     if path is not None:
-        with open("test.txt", "a") as f:
+        with open(path, "a") as f:
             f.write(",".join([str(c) for c in row]))
+            f.write("\n")
     else:
         raise ValueError("No path provided and thus communication will not be logged.")
