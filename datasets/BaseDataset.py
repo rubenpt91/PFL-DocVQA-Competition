@@ -15,7 +15,7 @@ class BaseDataset(Dataset):
         if 'node_id' not in kwargs:
             data = np.load(os.path.join(imbd_dir, "imdb_{:s}.npy".format(split)), allow_pickle=True)
         else:
-            data = np.load(os.path.join(imbd_dir, "imdb_{:s}_c{:}.npy".format(split, kwargs['node_id'])), allow_pickle=True)
+            data = np.load(os.path.join(imbd_dir, "imdb_{:s}_node_{:}.npy".format(split, kwargs['node_id'])), allow_pickle=True)
 
         self.header = data[0]
         self.imdb = data[1:]
