@@ -1,4 +1,6 @@
 dataset_name: DocILE-ELSA
-imdb_dir: /data/users/rperez/DocILE/elsa_imdb
-images_dir: /data/users/rperez/DocILE/images
+imdb_dir: /data/shared/DocILE/elsa_imdb
+# imdb_dir: /data/users/rperez/DocILE/elsa_imdb
+images_dir: /data/shared/DocILE/images
+# images_dir: /data/users/rperez/DocILE/images
 page_retrieval: Concat  # Oracle / Concat / Logits / Custom (for Hierarchical methods (Hi-LayoutLMv3, Hi-LT5, Hi-VT5) TODO: First

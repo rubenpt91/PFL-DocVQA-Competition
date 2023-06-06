@@ -26,13 +26,13 @@ class BaseDataset(Dataset):
         self.max_answers = 2
         self.images_dir = images_dir
 
-        self.use_images = getattr(kwargs, 'use_images', False)
-        self.get_raw_ocr_data = getattr(kwargs, 'get_raw_ocr_data', False)
-        self.max_pages = getattr(kwargs, 'max_pages', 1)
+        self.use_images = kwargs.get('use_images', False)
+        self.get_raw_ocr_data = kwargs.get('get_raw_ocr_data', False)
+        self.max_pages = kwargs.get('max_pages', 1)
         self.get_doc_id = False
 
     def __len__(self):
-        return 10  # len(self.imdb)
+        return len(self.imdb)
 
     def sample(self, idx=None, question_id=None):
 

@@ -26,6 +26,9 @@ def parse_args():
     parser.add_argument('--seed', type=int, help='Seed to allow reproducibility.')
     parser.add_argument('--save-dir', type=str, help='Seed to allow reproducibility.')
 
+    # Cuda DPP
+    parser.add_argument('--distributed', action='store_true', default=False, help='To use Distributed Data parallel.')
+
     # Flower
     parser.add_argument('--flower', action='store_true', default=False, help='Use FL Flower.')
     parser.add_argument('--num_clients', type=int, help='Number of clients for FL.')
