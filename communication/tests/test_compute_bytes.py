@@ -23,8 +23,9 @@ def test_get_bytes_for_tensor_int8():
 
 def test_get_bytes_for_tensor_bool():
     """
-    Weirdly enough one bool takes 1 Byte in np.
-    See: https://github.com/pynp/pynp/issues/41571
+    Weirdly enough one bool takes 1 Byte in np and torch.
+    See numpy: https://github.com/numpy/numpy/issues/14821
+    See torch: https://github.com/pynp/pynp/issues/41571
     """
     b = np.empty((1, 1, 128, 256), dtype=bool)
     amount_for_bool = 1
