@@ -257,10 +257,13 @@ class FlowerClient(fl.client.NumPyClient):
 
         # return get_parameters(self.model), len(self.trainloader), {}
         # return updated_weigths, len(self.trainloader), {}
+        warnings.warn("Train:" + str(updated_weigths[0]))
         return updated_weigths, 1, {}  # TODO 1 ==> Number of selected clients.
 
     def evaluate(self, parameters, config):
+        warnings.warn("Evaluate: " + str(parameters[0]))
         set_parameters(self.model, parameters)
+        warnings.warn("Evaluate model: " + str(self.model.model.state_dict()))
         # loss, accuracy = test(self.model, self.valloader)
         # accuracy, anls, ret_prec, _, _ = evaluate(self.valloader, self.model, self.evaluator, return_scores_by_sample=False, return_pred_answers=False, **config)
         accuracy, anls, ret_prec, _, _ = evaluate(self.valloader, self.model, self.evaluator, config)  # data_loader, model, evaluator, **kwargs
