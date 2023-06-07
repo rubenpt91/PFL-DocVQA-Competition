@@ -34,6 +34,11 @@ def parse_args():
     parser.add_argument('--num_clients', type=int, help='Number of clients for FL.')
     parser.add_argument('--num_rounds', type=int, help='Number of FL rounds.')
 
+    parser.add_argument('--sensitivity', type=float, help='Upper bound of the contribution per group (provider).')
+    parser.add_argument('--noise_multiplier', type=float, help='Noise multiplier.')
+    parser.add_argument('--client_sampling_probability', type=float, help='.')  # (Number of selected clients / total number of clients)
+    parser.add_argument('--iteration_per_fl_round', type=int, help='Number of iterations per provider during each FL round..')
+    parser.add_argument('--providers_per_fl_round', type=int, help='Number of groups providers) sampled in each FL Round.')
     return parser.parse_args()
 
 
@@ -133,6 +138,9 @@ def load_config(args):
     # config = {'dataset_params': dataset_config, 'model_params': model_config, 'training_params': training_config}
     config = {**dataset_config, **model_config, **training_config}
 
+    # config['group_sampling_probability'] = config['client_sampling_probability'] * 50 / 340  # (Number of selected clients / total number of clients) * (Number of selected groups / MIN(number of groups among the clients))
+    config['group_sampling_probability'] = args.client_sampling_probability  # 0.1960  # config['client_sampling_probability'] * 50 / 340  # (Number of selected clients / total number of clients) * (Number of selected groups / MIN(number of groups among the clients))
+
     config = config | {k: v for k, v in args._get_kwargs() if v is not None}
     config.pop('model')
     config.pop('dataset')
@@ -143,6 +151,7 @@ def load_config(args):
     if 'seed' not in config:
         print("Seed not specified. Setting default seed to '{:d}'".format(42))
         config.seed = 42
+
 
     check_config(config)
 

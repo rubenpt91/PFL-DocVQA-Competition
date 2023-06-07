@@ -21,19 +21,29 @@ class Logger:
         document_pages = getattr(config, 'max_pages', None)
         page_tokens = getattr(config, 'page_tokens', None)
         tags = [config.model_name, dataset, machine]
-        config = {'Model': config.model_name, 'Weights': config.model_weights, 'Dataset': dataset,
+
+        log_config = {'Model': config.model_name, 'Weights': config.model_weights, 'Dataset': dataset,
                   'Page retrieval': page_retrieval, 'Visual Encoder': visual_encoder,
                   'Batch size': config.batch_size, 'Max. Seq. Length': getattr(config, 'max_sequence_length', '-'),
                   'lr': config.lr, 'seed': config.seed}
 
         if document_pages:
-            config['Max Pages'] = document_pages
+            log_config['Max Pages'] = document_pages
 
         if page_tokens:
-            config['PAGE tokens'] = page_tokens
+            log_config['PAGE tokens'] = page_tokens
 
-        self.logger = wb.init(project="PFL-DocVQA-Competition", name=self.experiment_name, dir=self.log_folder, tags=tags, config=config)
-        self._print_config(config)
+        if config.flower:
+            tags.append('FL Flower')
+
+            log_config.update({
+                'FL Flower': True,
+                'Client Sampling Probability': config.client_sampling_probability,
+                'Providers per FL Round': config.providers_per_fl_round
+            })
+
+        self.logger = wb.init(project="PFL-DocVQA-Competition", name=self.experiment_name, dir=self.log_folder, tags=tags, config=log_config)
+        self._print_config(log_config)
 
         self.current_epoch = 0
         self.len_dataset = 0

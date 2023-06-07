@@ -9,38 +9,36 @@ from datasets.BaseDataset import BaseDataset
 
 class DocILE_ELSA(BaseDataset):
 
-    def __init__(self, imbd_dir, images_dir, page_retrieval, split, kwargs):
-
-        super(DocILE_ELSA, self).__init__(imbd_dir, images_dir, page_retrieval, split, kwargs)
-
-        if self.page_retrieval == 'oracle':
-            raise ValueError("'Oracle' set-up is not valid for DocILE-ELSA, since there is no GT for the answer page.")
+    def __init__(self, imbd_dir, images_dir, split, kwargs, indexes=None):
+        super(DocILE_ELSA, self).__init__(imbd_dir, images_dir, 'oracle', split, kwargs, indexes)  # TODO Remove the Oracle and let one single dataset
 
     def __getitem__(self, idx):
         record = self.imdb[idx]
 
-        question = "What is the {:s}?".format(record['question'].replace('_', ' '))
+        question = record["question"]
         answers = list(set(answer.lower() for answer in record['answers'])) if 'answers' in record else None
-        answer_page_idx = -1
-        num_pages = record['total_doc_pages']
+        answer_page_idx = record['answer_page_idx']
 
-        if self.page_retrieval == 'oracle':
-            raise ValueError("'Oracle' set-up is not valid for DocILE-ELSA, since there is no GT for the answer page.")
+        """ Prepared for Single Page <====
+        page_context = " ".join([word.lower() for word in record['ocr_tokens'][answer_page_idx]])
+        context_page_corresp = [answer_page_idx] * len(record['ocr_tokens'][answer_page_idx])
 
-            """
-            context = ' '.join([word.lower() for word in record['ocr_tokens'][answer_page_idx]])
-            context_page_corresp = None
-
-            if self.use_images:
-                image_names = os.path.join(self.images_dir, "{:s}".format(record['image_name'][answer_page_idx]))
-                images = Image.open(image_names).convert("RGB")
-
-            if self.get_raw_ocr_data:
+        if self.get_raw_ocr_data:
+            if len(record['ocr_tokens'][answer_page_idx]) == 0:
+                words = []
+                boxes = np.empty([0, 4])
+                                 
+            else:
                 words = [word.lower() for word in record['ocr_tokens'][answer_page_idx]]
                 boxes = np.array([bbox for bbox in record['ocr_normalized_boxes'][answer_page_idx]])
-            """
 
-        elif self.page_retrieval == 'concat':
+        if self.use_images:
+            image_names = os.path.join(self.images_dir, "{:s}".format(record['image_name'][answer_page_idx]))
+            images = Image.open(image_names).convert("RGB")
+        """
+
+        num_pages = record['total_doc_pages']
+        if True:  # self.page_retrieval == 'concat':
             context = ""
             context_page_corresp = []
             for page_ix in range(num_pages):
@@ -66,58 +64,7 @@ class DocILE_ELSA(BaseDataset):
                 images = [Image.open(img_path).convert("RGB") for img_path in image_names]
                 images, boxes = utils.create_grid_image(images, boxes)
 
-        elif self.page_retrieval == 'logits':
-            context = []
-            for page_ix in range(record['num_pages']):
-                context.append(' '.join([word.lower() for word in record['ocr_tokens'][page_ix]]))
-
-            context_page_corresp = None
-
-            if self.use_images:
-                image_names = [os.path.join(self.images_dir, "{:s}".format(image_name)) for image_name in record['image_name']]
-                images = [Image.open(img_path).convert("RGB") for img_path in image_names]
-
-            if self.get_raw_ocr_data:
-                words = []
-                boxes = [np.array(page_boxes) for page_boxes in record['ocr_normalized_boxes']]
-                for p in range(num_pages):
-                    words.append([word.lower() for word in record['ocr_tokens'][p]])
-
-        elif self.page_retrieval == 'custom':
-            first_page, last_page = self.get_pages(record)
-            num_pages = len(range(first_page, last_page))
-
-            words = []
-            boxes = []
-            context = []
-            image_names = []
-
-            for page_ix in range(first_page, last_page):
-                words.append([word.lower() for word in record['ocr_tokens'][page_ix]])
-                boxes.append(np.array(record['ocr_normalized_boxes'][page_ix], dtype=np.float32))
-                context.append(' '.join([word.lower() for word in record['ocr_tokens'][page_ix]]))
-                image_names.append(os.path.join(self.images_dir, "{:s}".format(record['image_name'][page_ix])))
-
-            context_page_corresp = None
-
-            if num_pages < self.max_pages:
-                for _ in range(self.max_pages - num_pages):
-                    words.append([''])
-                    boxes.append(np.zeros([1, 4], dtype=np.float32))
-
-            if self.use_images:
-                images = [Image.open(img_path + '.jpg').convert("RGB") for img_path in image_names]
-                images += [Image.new('RGB', (2, 2)) for i in range(self.max_pages - len(image_names))]  # Pad with 2x2 images.
-
-        if self.page_retrieval == 'oracle' or self.page_retrieval == 'concat':
-            start_idxs, end_idxs = self._get_start_end_idx(context, answers)
-
-        elif self.page_retrieval == 'logits':
-            start_idxs, end_idxs = [], []
-            for page_ix in range(record['num_pages']):
-                s, e = self._get_start_end_idx(context[page_ix], answers)
-                start_idxs.append(s)
-                end_idxs.append(e)
+        start_idxs, end_idxs = self._get_start_end_idx(context, answers)
 
         sample_info = {
             # 'question_id': "{:s}_{:d}".format(record['set_name'], idx),
