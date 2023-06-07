@@ -26,42 +26,62 @@ import numpy as np
 from numpy import linalg as LA
 
 def flatten_params(update):
-    return np.concatenate([np.array(element).ravel() for element in update])
+    """
+    Flat the list of tensors (layer params) into a single vector.
+    """
+    # return np.concatenate([np.array(element).ravel() for element in update])
+    return torch.cat([torch.flatten(element) for element in update])
 
 def compute_norm(a):
-    return LA.norm(a, ord=2)
+    """
+    Compute L2 norm of a vector.
+    """
+    # return LA.norm(a, ord=2)
+    return torch.linalg.vector_norm(a, ord=2)
 
 def clip_norm(a,clip_norm):
-    return np.divide(a, np.maximum(1, np.divide(compute_norm(a), clip_norm)))
+    """
+    Clip update parameters to clip norm.
+    """
+    # return np.divide(a, np.maximum(1, np.divide(compute_norm(a), clip_norm)))
+    return torch.div(a, torch.max(torch.tensor(1, device=a.device), torch.div(compute_norm(a), clip_norm)))
 
 def get_shape(update):
+    """
+    Get the shapes of the tensors to be reconstructed later.
+    """
     shapes=[ele.shape for ele in update]
     return shapes
 
 def reconstruct(flat_update,shapes):
-    if np.sum([np.prod(element) for element in shapes]) != len(flat_update):
-        stop = True
-        pdb.set_trace()
+    """
+    Reconstruct the original shapes of the tensors list.
+    """
     ind=0
     rec_upd=[]
     for shape in shapes:
-        try:
-            rec_upd.append(flat_update[ind:ind+np.prod(shape)].reshape(shape))
-            ind+=np.prod(shape)
-        except:
-            pdb.set_trace()
+        num_elements = torch.prod(torch.tensor(shape)).item()
+        rec_upd.append(flat_update[ind:ind+num_elements].reshape(shape))
+        ind+=num_elements
+
     return rec_upd
 
 
-def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, config):
+def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl_config):
     model.model.train()
-    parameters = get_parameters(model)
+    # parameters = get_parameters(model)
+    # parameters = [val.cpu().numpy() for _, val in model.model.state_dict().items()]
+    parameters = list(model.model.state_dict().values())
 
-    # sensitivity = config.sensitivity
+    # sensitivity = 0.5
+    sensitivity = config.sensitivity
+    noise_multiplier = 0
+    # noise_multiplier = 4.2
     # noise_muliplier = config.noise_multiplier
     # pdb.set_trace()
+    warnings.warn("\n\n" + str(config) + "\n\n")
+    warnings.warn("\n\n" + str(fl_config) + "\n\n")
     agg_update = None
-    global norm_list
     for provider_dataloader in data_loaders:
         total_loss = 0
 
@@ -104,16 +124,19 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, co
 
         # After all the iterations:
         # Get the update
-        new_update = [w - w_0 for w, w_0 in zip(get_parameters(model), copy.deepcopy(parameters))]  # Get model update
+        # new_update = [w - w_0 for w, w_0 in zip(get_parameters(model), copy.deepcopy(parameters))]  # Get model update
+        new_update = [w - w_0 for w, w_0 in zip(list(model.model.state_dict().values()), copy.deepcopy(parameters))]  # Get model update
 
         # Clip it
-        sensitivity = 0.5  # TODO Tune it
         shapes = get_shape(new_update)
+
         new_update = flatten_params(new_update)
-        # new_update = clip_norm(new_update, sensitivity)
+
+        if sensitivity != 0:  # TODO Boolean to control this
+            new_update = clip_norm(new_update, sensitivity)
+
         # pdb.set_trace()
         norm_list.append(compute_norm(new_update))
-        warnings.warn(str(compute_norm(new_update)))
         warnings.warn(str(norm_list))
 
         with open("norms.txt", "a") as f:
@@ -127,17 +150,19 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, co
         if agg_update is None:
             agg_update = new_update
         else:
-            agg_update = [np.add(agg_upd, n_upd) for agg_upd, n_upd in zip(agg_update, new_update)]
+            # agg_update = [np.add(agg_upd, n_upd) for agg_upd, n_upd in zip(agg_update, new_update)]
+            agg_update += new_update
 
     # Add the noise
-    # noise_multiplier = 4.2
-    noise_multiplier = 0
-    # agg_update = [np.add(agg_upd, np.random.normal(0, scale=noise_multiplier)) for agg_upd in agg_update]
-    agg_update = np.add(agg_update, np.random.normal(0, scale=noise_multiplier*sensitivity, size=len(agg_update)))
+    if sensitivity != 0:
+        # agg_update = [np.add(agg_upd, np.random.normal(0, scale=noise_multiplier)) for agg_upd in agg_update]
+        # agg_update = np.add(agg_update, np.random.normal(0, scale=noise_multiplier*sensitivity, size=len(agg_update)))
+        agg_update = torch.add(agg_update, torch.normal(mean=0, std=noise_multiplier * sensitivity, size=len(agg_update), device=agg_update.device))
 
     # Divide the noisy aggregated update by the number of providers (100)
     # agg_update = [np.divide(agg_upd, len(data_loaders)) for agg_upd in agg_update]
-    agg_update = np.divide(agg_update, len(data_loaders))
+    # agg_update = np.divide(agg_update, len(data_loaders))
+    agg_update = torch.div(agg_update, len(data_loaders))
 
     # Add the noisy update to the original model
     agg_update = reconstruct(agg_update, shapes)
