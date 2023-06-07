@@ -3,9 +3,6 @@ from collections import OrderedDict
 
 
 def get_parameters(model):
-    with open("get_weights.txt", "a") as f:
-        f.write(str([val.cpu().numpy() for _, val in model.model.state_dict().items()]) + "\n")
-
     return [val.cpu().numpy() for _, val in model.model.state_dict().items()]
 
 
@@ -13,9 +10,6 @@ def set_parameters(model, parameters):
     params_dict = zip(model.model.state_dict().keys(), parameters)
     state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
     model.model.load_state_dict(state_dict, strict=True)
-
-    with open("set_weights.txt", "a") as f:
-        f.write(str([val.cpu().numpy() for _, val in model.model.state_dict().items()]) + "\n")
 
 
 """
