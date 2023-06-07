@@ -5,6 +5,7 @@ model_name: T5
 model_weights: rubentito/t5-base-mpdocvqa
 device: cuda
 data_parallel: False
+log_path: communication_log2.csv
 
 training_parameters:
   lr: 2e-4  # 2e-4

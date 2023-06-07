@@ -125,7 +125,7 @@ class FlowerClient(fl.client.NumPyClient):
 
     def get_parameters(self, config):
         parameters = get_parameters_from_model(self.model)
-        log_communication(federated_round=config["current_round"], sender=self.cid, receiver=-1, data=parameters, log_location="communication_log.csv")
+        log_communication(federated_round=config["current_round"], sender=self.cid, receiver=-1, data=parameters, log_location=config["log_path"])
         return parameters
 
     def fit(self, parameters, config):
@@ -137,7 +137,7 @@ class FlowerClient(fl.client.NumPyClient):
         params_dict = zip(model.model.state_dict().keys(), parameters)
         state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
         if config["current_round"] != -1:
-            log_communication(federated_round=config["current_round"], sender=-1, receiver=self.cid, data=parameters, log_location="communication_log.csv")
+            log_communication(federated_round=config["current_round"], sender=-1, receiver=self.cid, data=parameters, log_location=config["log_path"])
         model.model.load_state_dict(state_dict, strict=True)
 
     def evaluate(self, parameters, config):
@@ -183,12 +183,20 @@ if __name__ == '__main__':
         model = build_model(config)  # TODO Should already be in CUDA
         params = get_parameters_from_model(model)
 
-        def fit_config(server_round: int):
-            """Return training configuration dict for each round."""
-            config = {
-                "current_round": server_round,
-            }
-            return config
+        def get_on_fit_config_fn(log_path):
+            """Return a function which returns training configurations."""
+
+            def fit_config(server_round: int):
+                """Return training configuration dict for each round."""
+                config = {
+                    "current_round": server_round,
+                    "log_path": log_path
+                }
+                return config
+
+            return fit_config
+        
+
         
         def evaluate_config(server_round: int):
             """Return evaluate configuration dict for each round."""
@@ -206,7 +214,7 @@ if __name__ == '__main__':
             min_available_clients=NUM_CLIENTS,  # Wait until all 10 clients are available
             evaluate_metrics_aggregation_fn=weighted_average,  # <-- pass the metric aggregation function
             initial_parameters=fl.common.ndarrays_to_parameters(params),
-            on_fit_config_fn=fit_config,
+            on_fit_config_fn=get_on_fit_config_fn(config.log_path),
             on_evaluate_config_fn=evaluate_config,
         )
 
