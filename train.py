@@ -6,8 +6,7 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 
-from datasets.SP_DocVQA import SPDocVQA, singlepage_docvqa_collate_fn
-from models.Longformer import Longformer
+from datasets.SP_DocVQA import singlepage_docvqa_collate_fn
 from eval import evaluate
 from metrics import Evaluator
 from build_utils import build_model, build_optimizer, build_dataset

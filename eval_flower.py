@@ -12,7 +12,7 @@ from utils import parse_args, time_stamp_to_hhmmss, load_config, save_json
 from build_utils import build_model, build_dataset
 
 import flwr as fl
-from utils_parallel import get_parameters, set_parameters, weighted_average
+from utils_parallel import get_parameters_from_model, set_parameters, weighted_average
 
 
 def evaluate(data_loader, model, evaluator, config):
@@ -151,7 +151,7 @@ class FlowerClient(fl.client.NumPyClient):
         self.valloader = valloader
 
     def get_parameters(self, config):
-        return get_parameters(self.model)
+        return get_parameters_from_model(self.model)
 
     def evaluate(self, parameters, config):
         set_parameters(self.model, parameters)

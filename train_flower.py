@@ -15,7 +15,8 @@ from eval_flower import evaluate
 from logger import Logger
 from metrics import Evaluator
 from utils import load_config, parse_args, seed_everything
-from utils_parallel import get_parameters, weighted_average
+from utils_parallel import get_parameters_from_model
+from utils_parallel import weighted_average
 
 
 def train_epoch(data_loader, model, optimizer, lr_scheduler, evaluator, logger):
@@ -123,14 +124,14 @@ class FlowerClient(fl.client.NumPyClient):
         self.cid = cid
 
     def get_parameters(self, config):
-        parameters = get_parameters(self.model)
-        log_communication(federated_round=42, sender=self.cid, receiver=-1, data=parameters, log_location="communication_log.csv")
+        parameters = get_parameters_from_model(self.model)
+        log_communication(federated_round=config["current_round"], sender=self.cid, receiver=-1, data=parameters, log_location="communication_log.csv")
         return parameters
 
     def fit(self, parameters, config):
         self.set_parameters(self.model, parameters, config)
         train_loss = train_epoch(self.trainloader, self.model, self.optimizer, self.lr_scheduler, self.evaluator, self.logger)
-        return get_parameters(self.model), len(self.trainloader), {}
+        return self.get_parameters(config), len(self.trainloader), {}
 
     def set_parameters(self, model, parameters, config):
         params_dict = zip(model.model.state_dict().keys(), parameters)
@@ -180,7 +181,7 @@ if __name__ == '__main__':
 
         NUM_CLIENTS = config.num_clients
         model = build_model(config)  # TODO Should already be in CUDA
-        params = get_parameters(model)
+        params = get_parameters_from_model(model)
 
         def fit_config(server_round: int):
             """Return training configuration dict for each round."""

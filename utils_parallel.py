@@ -2,7 +2,7 @@ import torch
 from collections import OrderedDict
 
 
-def get_parameters(model):
+def get_parameters_from_model(model):
     return [val.cpu().numpy() for _, val in model.model.state_dict().items()]
 
 
