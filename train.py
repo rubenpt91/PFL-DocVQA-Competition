@@ -170,12 +170,12 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl
 
     # Add the noisy update to the original model
     agg_update = reconstruct(agg_update, shapes)
-    agg_update = [np.add(agg_upd, w_0) for agg_upd, w_0 in zip(agg_update, copy.deepcopy(parameters))]
+    upd_weights = [np.add(agg_upd, w_0) for agg_upd, w_0 in zip(agg_update, copy.deepcopy(parameters))]
 
     # Send the weights to the server
     logger.logger.log(log_dict, step=logger.current_epoch * logger.len_dataset + batch_idx)
 
-    return agg_update
+    return upd_weights
 
 
 # def seed_worker(worker_id):
@@ -252,11 +252,12 @@ class FlowerClient(fl.client.NumPyClient):
         # warnings.warn(str(type(get_parameters(self.model))) + str(len(get_parameters(self.model))) + '  ' + str(len(get_parameters(self.model)[0])))
         # warnings.warn(str(parameters))
         # warnings.warn(str(get_parameters(self.model)))
-        updated_weigths = [w - w_0 for w, w_0 in zip(get_parameters(self.model), parameters)]  # Get model update
+        # updated_weigths = [w - w_0 for w, w_0 in zip(get_parameters(self.model), parameters)]  # Get model update
         # warnings.warn(str(updated_weigths))
 
         # return get_parameters(self.model), len(self.trainloader), {}
-        return updated_weigths, len(self.trainloader), {}
+        # return updated_weigths, len(self.trainloader), {}
+        return updated_weigths, 1, {}  # TODO 1 ==> Number of selected clients.
 
     def evaluate(self, parameters, config):
         set_parameters(self.model, parameters)
