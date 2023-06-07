@@ -1,5 +1,5 @@
 from communication.compute_tensor_size import get_bytes_for_tensor
-import numpy as np
+import os
 
 def log_communication(federated_round : int, sender : int, receiver: int, data : list, log_location: str):
     """
@@ -46,7 +46,11 @@ def _save_row_to_csv(row : list, path : str):
     ------
     ValueError
         Raise if path is None.
-    """    
+    """
+    if not os.path.isfile(path):
+        with open(path, "a") as f:
+            f.write(",".join(["federated_round", "sender", "receiver", "amount_of_bytes"]))
+            f.write("\n")
     if path is not None:
         with open(path, "a") as f:
             f.write(",".join([str(c) for c in row]))
