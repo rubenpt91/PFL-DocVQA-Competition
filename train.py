@@ -74,7 +74,6 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl
     # parameters = [val.cpu().numpy() for _, val in model.model.state_dict().items()]
     param_keys = list(model.model.state_dict().keys())
     parameters = copy.deepcopy(list(model.model.state_dict().values()))
-    pdb.set_trace()
     # parameters = list(model.model.state_dict().values())[:]
     # copy.deepcopy(list(model.model.state_dict().values()))
 
@@ -134,14 +133,13 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl
         # After all the iterations:
         # Get the update
         # new_update = [w - w_0 for w, w_0 in zip(get_parameters(model), copy.deepcopy(parameters))]  # Get model update
-        pdb.set_trace()
         new_update = [w - w_0 for w, w_0 in zip(list(model.model.state_dict().values()), parameters)]  # Get model update
 
         # Clip it
         shapes = get_shape(new_update)
         new_update = flatten_params(new_update)
         # if sensitivity != 0:  # TODO Boolean to control this
-        new_update = clip_norm(new_update, sensitivity)
+        # new_update = clip_norm(new_update, sensitivity)
 
         norm_list.append(compute_norm(new_update).item())
         warnings.warn(str(norm_list))

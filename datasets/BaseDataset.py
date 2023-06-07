@@ -37,7 +37,7 @@ class BaseDataset(Dataset):
         self.get_doc_id = False
 
     def __len__(self):
-        return min(20, len(self.imdb))
+        return len(self.imdb)  #  min(20, len(self.imdb))
 
     def sample(self, idx=None, question_id=None):
 
