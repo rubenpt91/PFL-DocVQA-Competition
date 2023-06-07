@@ -16,6 +16,7 @@ from metrics import Evaluator
 from build_utils import build_model, build_optimizer, build_dataset, build_provider_dataset
 from utils import parse_args, load_config, seed_everything
 from utils_parallel import get_parameters, set_parameters, weighted_average
+from collections import OrderedDict
 
 from logger import Logger
 from checkpoint import save_model
@@ -71,19 +72,28 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl
     model.model.train()
     # parameters = get_parameters(model)
     # parameters = [val.cpu().numpy() for _, val in model.model.state_dict().items()]
-    parameters = list(model.model.state_dict().values())
+    param_keys = list(model.model.state_dict().keys())
+    parameters = copy.deepcopy(list(model.model.state_dict().values()))
+    pdb.set_trace()
+    # parameters = list(model.model.state_dict().values())[:]
+    # copy.deepcopy(list(model.model.state_dict().values()))
 
     # sensitivity = 0.5
     sensitivity = config.sensitivity
     noise_multiplier = 0
     # noise_multiplier = 4.2
     # noise_muliplier = config.noise_multiplier
-    # pdb.set_trace()
     warnings.warn("\n\n" + str(config) + "\n\n")
     warnings.warn("\n\n" + str(fl_config) + "\n\n")
     agg_update = None
     for provider_dataloader in data_loaders:
         total_loss = 0
+
+        # set_parameters(model, parameters)
+        state_dict = OrderedDict({k: v for k, v in zip(param_keys, parameters)})
+        model.model.load_state_dict(state_dict, strict=True)
+
+        model.model.train()
 
         iterations = 2
         for iter in range(iterations):
@@ -96,7 +106,6 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl
                 loss.backward()
                 optimizer.step()
                 lr_scheduler.step()
-
                 optimizer.zero_grad()
 
                 metric = evaluator.get_metrics(gt_answers, pred_answers)
@@ -125,25 +134,22 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl
         # After all the iterations:
         # Get the update
         # new_update = [w - w_0 for w, w_0 in zip(get_parameters(model), copy.deepcopy(parameters))]  # Get model update
-        new_update = [w - w_0 for w, w_0 in zip(list(model.model.state_dict().values()), copy.deepcopy(parameters))]  # Get model update
+        pdb.set_trace()
+        new_update = [w - w_0 for w, w_0 in zip(list(model.model.state_dict().values()), parameters)]  # Get model update
 
         # Clip it
         shapes = get_shape(new_update)
-
         new_update = flatten_params(new_update)
+        # if sensitivity != 0:  # TODO Boolean to control this
+        new_update = clip_norm(new_update, sensitivity)
 
-        if sensitivity != 0:  # TODO Boolean to control this
-            new_update = clip_norm(new_update, sensitivity)
-
-        # pdb.set_trace()
-        norm_list.append(compute_norm(new_update))
+        norm_list.append(compute_norm(new_update).item())
         warnings.warn(str(norm_list))
 
         with open("norms.txt", "a") as f:
-            f.write(str(compute_norm(new_update)) + "\n")
+            f.write(str(norm_list[-1]) + "\n")
 
         # new_update = torch.nn.utils.clip_grad_norm_([torch.from_numpy(element) for element in new_update],  max_norm=sensitivity, norm_type=2)
-        # pdb.set_trace()
         # new_update = [x.numpy() for x in new_update]
 
         # Aggregate (Avg)
