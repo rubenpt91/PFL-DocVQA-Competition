@@ -94,7 +94,7 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl
 
         model.model.train()
 
-        iterations = 2
+        iterations = 1
         for iter in range(iterations):
             for batch_idx, batch in enumerate(tqdm(provider_dataloader)):  # One dataloader per provider
                 gt_answers = batch['answers']
