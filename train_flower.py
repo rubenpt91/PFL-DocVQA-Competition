@@ -128,19 +128,19 @@ class FlowerClient(fl.client.NumPyClient):
         return parameters
 
     def fit(self, parameters, config):
-        self.set_parameters(self.model, parameters)
+        self.set_parameters(self.model, parameters, config)
         train_loss = train_epoch(self.trainloader, self.model, self.optimizer, self.lr_scheduler, self.evaluator, self.logger)
-
         return get_parameters(self.model), len(self.trainloader), {}
 
-    def set_parameters(self, model, parameters):
+    def set_parameters(self, model, parameters, config):
         params_dict = zip(model.model.state_dict().keys(), parameters)
         state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
-        log_communication(federated_round=42, sender=-1, receiver=self.cid, data=parameters, log_location="communication_log.csv")
+        if config["current_round"] != -1:
+            log_communication(federated_round=config["current_round"], sender=-1, receiver=self.cid, data=parameters, log_location="communication_log.csv")
         model.model.load_state_dict(state_dict, strict=True)
 
     def evaluate(self, parameters, config):
-        self.set_parameters(self.model, parameters)
+        self.set_parameters(self.model, parameters, config)
         # loss, accuracy = test(self.model, self.valloader)
         # accuracy, anls, ret_prec, _, _ = evaluate(self.valloader, self.model, self.evaluator, return_scores_by_sample=False, return_pred_answers=False, **config)
         accuracy, anls, ret_prec, _, _ = evaluate(self.valloader, self.model, self.evaluator, config)  # data_loader, model, evaluator, **kwargs
@@ -182,6 +182,20 @@ if __name__ == '__main__':
         model = build_model(config)  # TODO Should already be in CUDA
         params = get_parameters(model)
 
+        def fit_config(server_round: int):
+            """Return training configuration dict for each round."""
+            config = {
+                "current_round": server_round,
+            }
+            return config
+        
+        def evaluate_config(server_round: int):
+            """Return evaluate configuration dict for each round."""
+            config = {
+                "current_round": -1,
+            }
+            return config
+
         # Create FedAvg strategy
         strategy = fl.server.strategy.FedAvg(
             fraction_fit=1,  # Sample 100% of available clients for training
@@ -191,6 +205,8 @@ if __name__ == '__main__':
             min_available_clients=NUM_CLIENTS,  # Wait until all 10 clients are available
             evaluate_metrics_aggregation_fn=weighted_average,  # <-- pass the metric aggregation function
             initial_parameters=fl.common.ndarrays_to_parameters(params),
+            on_fit_config_fn=fit_config,
+            on_evaluate_config_fn=evaluate_config,
         )
 
         # Specify client resources if you need GPU (defaults to 1 CPU and 0 GPU)

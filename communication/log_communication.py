@@ -28,7 +28,6 @@ def log_communication(federated_round : int, sender : int, receiver: int, data :
     if int(federated_round) < 0:
         raise ValueError("The ID of federated round is negative which is invalid.")
     
-    print([x.dtype for x in data if x.dtype != np.float32])
     amount_of_bytes = sum([get_bytes_for_tensor(p) for p in data])
     _save_row_to_csv([federated_round, sender, receiver, amount_of_bytes], path=log_location)    
 
