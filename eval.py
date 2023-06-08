@@ -35,6 +35,8 @@ def evaluate(data_loader, model, evaluator, config):
     model.model.eval()
 
     for batch_idx, batch in enumerate(tqdm(data_loader)):
+        if batch_idx > 2:
+            break
         bs = len(batch['question_id'])
         with torch.no_grad():
             outputs, pred_answers, pred_answer_page, answer_conf = model.forward(batch, return_pred_answer=True)
