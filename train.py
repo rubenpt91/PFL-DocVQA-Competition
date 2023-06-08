@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from build_utils import (build_dataset, build_model, build_optimizer, build_provider_dataset)
-from datasets.BaseDataset import collate_fn
+from datasets.DocILE_ELSA import collate_fn
 from differential_privacy.dp_utils import (add_dp_noise, clip_parameters, flatten_params, get_shape, reconstruct)
 from eval import evaluate
 from logger import Logger
