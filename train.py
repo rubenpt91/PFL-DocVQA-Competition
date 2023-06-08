@@ -108,7 +108,7 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl
 
     # Add the noise
     if TRAIN_PRIVATE:
-        add_dp_noise(agg_update, noise_multiplier=noise_multiplier, sensitity=sensitivity)
+        agg_update = add_dp_noise(agg_update, noise_multiplier=noise_multiplier, sensitity=sensitivity)
 
     # Divide the noisy aggregated update by the number of providers (100)
     agg_update = torch.div(agg_update, len(data_loaders))
@@ -214,7 +214,11 @@ def client_fn(node_id):
     providers = random.sample(list(provider_to_doc.keys()), k=config.providers_per_fl_round)  # 50
 
     # create a list of train data loaders with one dataloader per provider
-    train_datasets = [build_provider_dataset(config, 'train', provider_to_doc, provider, node_id) for provider in providers]
+    if TRAIN_PRIVATE:
+        train_datasets = [build_provider_dataset(config, 'train', provider_to_doc, provider, node_id) for provider in providers]
+    else:
+        train_datasets = [build_dataset(config, 'train', node_id=0)]
+
     train_data_loaders = [DataLoader(train_dataset, batch_size=config.batch_size, shuffle=False, collate_fn=collate_fn) for train_dataset in train_datasets]
 
     # create validation data loader
