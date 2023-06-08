@@ -6,6 +6,7 @@ from datasets.BaseDataset import collate_fn
 from eval import evaluate
 from logger import Logger
 from metrics import Evaluator
+from train import fl_train
 from utils import seed_everything
 
 
