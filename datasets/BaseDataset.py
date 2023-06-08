@@ -10,12 +10,17 @@ import utils
 
 class BaseDataset(Dataset):
 
-    def __init__(self, imbd_dir, images_dir, page_retrieval, split, kwargs):
+    def __init__(self, imbd_dir, images_dir, page_retrieval, split, kwargs, indexes=None):
 
         if 'node_id' not in kwargs:
             data = np.load(os.path.join(imbd_dir, "imdb_{:s}.npy".format(split)), allow_pickle=True)
         else:
-            data = np.load(os.path.join(imbd_dir, "imdb_{:s}_c{:}.npy".format(split, kwargs['node_id'])), allow_pickle=True)
+            data = np.load(os.path.join(imbd_dir, "imdb_{:s}_node_{:}.npy".format(split, kwargs['node_id'])), allow_pickle=True)
+
+        # keep only data points of given provider
+        if indexes:
+            selected = [0] + indexes
+            data = [data[i] for i in selected]
 
         self.header = data[0]
         self.imdb = data[1:]
@@ -26,13 +31,13 @@ class BaseDataset(Dataset):
         self.max_answers = 2
         self.images_dir = images_dir
 
-        self.use_images = getattr(kwargs, 'use_images', False)
-        self.get_raw_ocr_data = getattr(kwargs, 'get_raw_ocr_data', False)
-        self.max_pages = getattr(kwargs, 'max_pages', 1)
+        self.use_images = kwargs.get('use_images', False)
+        self.get_raw_ocr_data = kwargs.get('get_raw_ocr_data', False)
+        self.max_pages = kwargs.get('max_pages', 1)
         self.get_doc_id = False
 
     def __len__(self):
-        return 10  # len(self.imdb)
+        return len(self.imdb)  #  min(20, len(self.imdb))
 
     def sample(self, idx=None, question_id=None):
 

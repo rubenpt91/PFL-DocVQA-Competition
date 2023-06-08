@@ -30,6 +30,13 @@ def parse_args():
     parser.add_argument('--flower', action='store_true', default=False, help='Use FL Flower.')
     parser.add_argument('--num_clients', type=int, help='Number of clients for FL.')
     parser.add_argument('--num_rounds', type=int, help='Number of FL rounds.')
+    parser.add_argument('--client_sampling_probability', type=float, help='.')  # (Number of selected clients / total number of clients)
+    parser.add_argument('--iteration_per_fl_round', type=int, help='Number of iterations per provider during each FL round..')
+    parser.add_argument('--providers_per_fl_round', type=int, help='Number of groups providers) sampled in each FL Round.')
+
+    parser.add_argument('--use_dp', action='store_true', default=False, help='Add Differential Privacy noise.')
+    parser.add_argument('--sensitivity', type=float, help='Upper bound of the contribution per group (provider).')
+    parser.add_argument('--noise_multiplier', type=float, help='Noise multiplier.')
 
     return parser.parse_args()
 
@@ -130,6 +137,9 @@ def load_config(args):
     # config = {'dataset_params': dataset_config, 'model_params': model_config, 'training_params': training_config}
     config = {**dataset_config, **model_config, **training_config}
 
+    # config['group_sampling_probability'] = config['client_sampling_probability'] * 50 / 340  # (Number of selected clients / total number of clients) * (Number of selected groups / MIN(number of groups among the clients))
+    config['group_sampling_probability'] = args.client_sampling_probability  # 0.1960  # config['client_sampling_probability'] * 50 / 340  # (Number of selected clients / total number of clients) * (Number of selected groups / MIN(number of groups among the clients))
+
     config = config | {k: v for k, v in args._get_kwargs() if v is not None}
     config.pop('model')
     config.pop('dataset')
@@ -155,7 +165,6 @@ def parse_config(config, args):
 
 
 def correct_alignment(context, answer, start_idx, end_idx):
-
     if context[start_idx: end_idx] == answer:
         return [start_idx, end_idx]
 
@@ -178,49 +187,3 @@ def time_stamp_to_hhmmss(timestamp, string=True):
     time = "{:02d}:{:02d}:{:02d}".format(hh, mm, ss) if string else [hh, mm, ss]
 
     return time
-
-
-def compute_grid(num_pages):
-    rows = cols = math.ceil(math.sqrt(num_pages))
-
-    if rows * (cols-1) >= num_pages:
-        cols = cols-1
-
-    return rows, cols
-
-
-def get_page_position_in_grid(page, cols):
-    page_row = math.floor(page/cols)
-    page_col = page % cols
-
-    return page_row, page_col
-
-
-def create_grid_image(images, boxes=None):
-    rows, cols = compute_grid(len(images))
-
-    # rescaling to min width [height padding]
-    min_width = min(im.width for im in images)
-    images = [
-        im.resize((min_width, int(im.height * min_width / im.width)), resample=Image.BICUBIC) for im in images
-    ]
-
-    w, h = max([img.size[0] for img in images]), max([img.size[1] for img in images])
-    assert w == min_width
-    grid = Image.new("RGB", size=(cols * w, rows * h))
-
-    for i, img in enumerate(images):
-        grid.paste(img, box=(i % cols * w, i // cols * h))
-
-    # Squeeze bounding boxes to the dimension of a single grid.
-    for page_ix in range(len(boxes)):
-
-        if len(boxes[page_ix]) == 0:
-            continue
-
-        page_row, page_col = get_page_position_in_grid(page_ix, cols)
-        boxes[page_ix][:, [0, 2]] = boxes[page_ix][:, [0, 2]] / cols * (page_col+1)  # Resize width
-        boxes[page_ix][:, [1, 3]] = boxes[page_ix][:, [1, 3]] / rows * (page_row+1)  # Resize height
-
-    boxes = np.concatenate(boxes)
-    return grid, boxes
