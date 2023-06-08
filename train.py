@@ -11,19 +11,14 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from build_utils import (build_dataset, build_model, build_optimizer,
-                         build_provider_dataset)
+from build_utils import (build_dataset, build_model, build_optimizer, build_provider_dataset)
 from datasets.BaseDataset import collate_fn
-from differential_privacy.dp_utils import (add_dp_noise, clip_parameters,
-                                           flatten_params, get_shape,
-                                           reconstruct)
+from differential_privacy.dp_utils import (add_dp_noise, clip_parameters, flatten_params, get_shape, reconstruct)
 from eval import evaluate
 from logger import Logger
 from metrics import Evaluator
 from utils import load_config, parse_args, seed_everything
 from utils_parallel import get_parameters, set_parameters, weighted_average
-
-TRAIN_PRIVATE = False
 
 
 def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl_config):
@@ -33,16 +28,11 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl
     model.model.train()
     param_keys = list(model.model.state_dict().keys())
     parameters = copy.deepcopy(list(model.model.state_dict().values()))
-    sensitivity = config.sensitivity
-    noise_multiplier = 0
-    TRAIN_PRIVATE = False
-    provider_iterations = 1
 
-    warnings.warn("\n\n" + str(config) + "\n\n")
     warnings.warn("\n\n" + str(fl_config) + "\n\n")
     agg_update = None
 
-    if not TRAIN_PRIVATE and len(data_loaders) > 1:
+    if not config.use_dp and len(data_loaders) > 1:
         raise ValueError("Non private training should only use one data loader.")
 
     for provider_dataloader in data_loaders:
@@ -54,7 +44,7 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl
         model.model.train()
 
         # perform n provider iterations (each provider has their own dataloader in the non-private case)
-        for iter in range(provider_iterations):
+        for iter in range(config.iteration_per_fl_round):
             for batch_idx, batch in enumerate(tqdm(provider_dataloader)):
                 gt_answers = batch['answers']
                 outputs, pred_answers, pred_answer_page, answer_conf = model.forward(batch, return_pred_answer=True)
@@ -92,13 +82,13 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl
         # Get the update
         new_update = [w - w_0 for w, w_0 in zip(list(model.model.state_dict().values()), parameters)]  # Get model update
 
-        if TRAIN_PRIVATE:
+        if config.use_dp:
             # flatten update
             shapes = get_shape(new_update)
             new_update = flatten_params(new_update)
 
             # clip update:
-            new_update = clip_parameters(new_update, clip_norm=sensitivity)
+            new_update = clip_parameters(new_update, clip_norm=config.sensitivity)
 
             # Aggregate (Avg)
             if agg_update is None:
@@ -106,10 +96,10 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl
             else:
                 agg_update += new_update
 
-    # handle DP after all updates are done
-    if TRAIN_PRIVATE:
+    # Handle DP after all updates are done
+    if config.use_dp:
         # Add the noise
-        agg_update = add_dp_noise(agg_update, noise_multiplier=noise_multiplier, sensitity=sensitivity)
+        agg_update = add_dp_noise(agg_update, noise_multiplier=config.noise_multiplier, sensitity=config.sensitivity)
 
         # Divide the noisy aggregated update by the number of providers (100)
         agg_update = torch.div(agg_update, len(data_loaders))
@@ -149,8 +139,7 @@ class FlowerClient(fl.client.NumPyClient):
 
     def evaluate(self, parameters, config):
         set_parameters(self.model, parameters)
-        accuracy, anls, ret_prec, _, _ = evaluate(self.valloader, self.model, self.evaluator,
-                                                  config)  # data_loader, model, evaluator, **kwargs
+        accuracy, anls, ret_prec, _, _ = evaluate(self.valloader, self.model, self.evaluator, config)  # data_loader, model, evaluator, **kwargs
         is_updated = self.evaluator.update_global_metrics(accuracy, anls, 0)
         self.logger.log_val_metrics(accuracy, anls, ret_prec, update_best=is_updated)
 
@@ -159,21 +148,20 @@ class FlowerClient(fl.client.NumPyClient):
 
 def client_fn(node_id):
     """Create a Flower client representing a single organization."""
-    # pick a subset of providers
+    # Pick a subset of providers
     provider_to_doc = json.load(open(config.provider_docs, 'r'))
     provider_to_doc = provider_to_doc["node_" + node_id]
     providers = random.sample(list(provider_to_doc.keys()), k=config.providers_per_fl_round)  # 50
 
-    # create a list of train data loaders with one dataloader per provider
-    if TRAIN_PRIVATE:
+    # Create a list of train data loaders with one dataloader per provider
+    if config.use_dp:
         train_datasets = [build_provider_dataset(config, 'train', provider_to_doc, provider, node_id) for provider in providers]
     else:
         train_datasets = [build_dataset(config, 'train', node_id=node_id)]
 
-    train_data_loaders = [DataLoader(train_dataset, batch_size=config.batch_size, shuffle=False,
-                                     collate_fn=collate_fn) for train_dataset in train_datasets]
+    train_data_loaders = [DataLoader(train_dataset, batch_size=config.batch_size, shuffle=False, collate_fn=collate_fn) for train_dataset in train_datasets]
 
-    # create validation data loader
+    # Create validation data loader
     val_dataset = build_dataset(config, 'val')
     val_data_loader = DataLoader(val_dataset, batch_size=config.batch_size, shuffle=False, collate_fn=collate_fn)
 
