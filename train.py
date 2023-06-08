@@ -28,12 +28,16 @@ import numpy as np
 
 
 def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl_config):
+    """
+    Trains and returns the updated weights.
+    """
     model.model.train()
     param_keys = list(model.model.state_dict().keys())
     parameters = copy.deepcopy(list(model.model.state_dict().values()))
     sensitivity = config.sensitivity
     noise_multiplier = 0
     train_private = False
+    provider_iterations = 1
 
     warnings.warn("\n\n" + str(config) + "\n\n")
     warnings.warn("\n\n" + str(fl_config) + "\n\n")
@@ -41,14 +45,14 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl
     for provider_dataloader in data_loaders:
         total_loss = 0
 
+        # set model weights to state of beginning of federated round
         state_dict = OrderedDict({k: v for k, v in zip(param_keys, parameters)})
         model.model.load_state_dict(state_dict, strict=True)
-
         model.model.train()
 
-        iterations = 1
-        for iter in range(iterations):
-            for batch_idx, batch in enumerate(tqdm(provider_dataloader)):  # One dataloader per provider
+        # perform n provider iterations (each provider has their own dataloader)
+        for iter in range(provider_iterations):
+            for batch_idx, batch in enumerate(tqdm(provider_dataloader)):
                 gt_answers = batch['answers']
                 outputs, pred_answers, pred_answer_page, answer_conf = model.forward(batch, return_pred_answer=True)
                 loss = outputs.loss + outputs.ret_loss if hasattr(outputs, 'ret_loss') else outputs.loss
@@ -79,7 +83,6 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl
                     batch_ret_prec = np.mean(ret_metric)
                     log_dict['Train/Batch Ret. Prec.'] = batch_ret_prec
 
-                # logger.logger.log(log_dict, step=logger.current_epoch * logger.len_dataset + batch_idx)
                 logger.logger.log(log_dict)
 
         # After all the iterations:
@@ -123,7 +126,6 @@ def train(model, config):
 
     epochs = config.train_epochs
     # device = config.device
-    batch_size = config.batch_size
     seed_everything(config.seed)
 
     evaluator = Evaluator(case_sensitive=False)
@@ -133,13 +135,8 @@ def train(model, config):
     train_dataset = build_dataset(config, 'train')
     val_dataset   = build_dataset(config, 'val')
 
-    # g = torch.Generator()
-    # g.manual_seed(config.seed)
-
     train_data_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True, collate_fn=collate_fn)
     val_data_loader   = DataLoader(val_dataset, batch_size=config.batch_size, shuffle=False, collate_fn=collate_fn)
-    # train_data_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True, collate_fn=singledocvqa_collate_fn, worker_init_fn=seed_worker, generator=g)
-    # val_data_loader   = DataLoader(val_dataset, batch_size=config.batch_size,  shuffle=False, collate_fn=singledocvqa_collate_fn, worker_init_fn=seed_worker, generator=g)
 
     logger.len_dataset = len(train_data_loader)
     optimizer, lr_scheduler = build_optimizer(model, length_train_loader=len(train_data_loader), config=config)
@@ -155,7 +152,7 @@ def train(model, config):
 
     for epoch_ix in range(epochs):
         logger.current_epoch = epoch_ix
-        train_loss = fl_train(train_data_loader, model, optimizer, lr_scheduler, evaluator, logger)
+        _ = fl_train(train_data_loader, model, optimizer, lr_scheduler, evaluator, logger)
         accuracy, anls, ret_prec, _, _ = evaluate(val_data_loader, model, evaluator, config)
 
         is_updated = evaluator.update_global_metrics(accuracy, anls, epoch_ix)
@@ -180,24 +177,11 @@ class FlowerClient(fl.client.NumPyClient):
 
     def fit(self, parameters, config):
         set_parameters(self.model, parameters)
-        # train_loss = fl_train(self.trainloader, self.model, self.optimizer, self.lr_scheduler, self.evaluator, self.logger)
         updated_weigths = fl_train(self.trainloader, self.model, self.optimizer, self.lr_scheduler, self.evaluator, self.logger, config)
-
-        # warnings.warn(str(type(parameters)) + str(len(parameters)) + '  ' + str(len(parameters[0])))
-        # warnings.warn(str(type(get_parameters(self.model))) + str(len(get_parameters(self.model))) + '  ' + str(len(get_parameters(self.model)[0])))
-        # warnings.warn(str(parameters))
-        # warnings.warn(str(get_parameters(self.model)))
-        # updated_weigths = [w - w_0 for w, w_0 in zip(get_parameters(self.model), parameters)]  # Get model update
-        # warnings.warn(str(updated_weigths))
-
-        # return get_parameters(self.model), len(self.trainloader), {}
-        # return updated_weigths, len(self.trainloader), {}
         return updated_weigths, 1, {}  # TODO 1 ==> Number of selected clients.
 
     def evaluate(self, parameters, config):
         set_parameters(self.model, parameters)
-        # loss, accuracy = test(self.model, self.valloader)
-        # accuracy, anls, ret_prec, _, _ = evaluate(self.valloader, self.model, self.evaluator, return_scores_by_sample=False, return_pred_answers=False, **config)
         accuracy, anls, ret_prec, _, _ = evaluate(self.valloader, self.model, self.evaluator, config)  # data_loader, model, evaluator, **kwargs
         is_updated = self.evaluator.update_global_metrics(accuracy, anls, 0)
         self.logger.log_val_metrics(accuracy, anls, ret_prec, update_best=is_updated)
@@ -210,18 +194,22 @@ def client_fn(node_id):
     """Create a Flower client representing a single organization."""
     model = build_model(config)  # TODO Should already be in CUDA
 
-    # pick a provider
+    # pick a subset of providers
     provider_to_doc = json.load(open(config.provider_docs, 'r'))
     provider_to_doc = provider_to_doc["node_" + node_id]
     providers = random.sample(list(provider_to_doc.keys()), k=config.providers_per_fl_round)  # 50
 
-    # create dataset for single provider
+    # create a list of train data loaders with one dataloader per provider
     train_datasets = [build_provider_dataset(config, 'train', provider_to_doc, provider, node_id) for provider in providers]
-
-    val_dataset = build_dataset(config, 'val')
     train_data_loaders = [DataLoader(train_dataset, batch_size=config.batch_size, shuffle=False, collate_fn=collate_fn) for train_dataset in train_datasets]
+
+    # create validation data loader
+    val_dataset = build_dataset(config, 'val')
     val_data_loader = DataLoader(val_dataset, batch_size=config.batch_size, shuffle=False, collate_fn=collate_fn)
+    
     optimizer, lr_scheduler = build_optimizer(model, length_train_loader=len(train_data_loaders), config=config)
+    
+
     evaluator = Evaluator(case_sensitive=False)
     logger = Logger(config=config)
     return FlowerClient(model, train_data_loaders, val_data_loader, optimizer, lr_scheduler, evaluator, logger, config)
@@ -237,12 +225,7 @@ def fit_config(server_round: int):
     return config
 
 
-norm_list = []
 if __name__ == '__main__':
-
-    if os.path.isfile('norms.txt'):
-        os.remove('norms.txt')
-
     args = parse_args()
     config = load_config(args)
     seed_everything(config.seed)
@@ -286,11 +269,4 @@ if __name__ == '__main__':
             strategy=strategy,
             client_resources=client_resources,
         )
-
-        import pandas as pd
-
-        print("\nAFSDAFDFSADFAF")
-        print(norm_list)
-        df = pd.DataFrame(norm_list)
-        df.to_csv('norms.csv')
 
