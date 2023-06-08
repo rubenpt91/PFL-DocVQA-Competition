@@ -184,7 +184,7 @@ def client_fn(node_id):
     if TRAIN_PRIVATE:
         train_datasets = [build_provider_dataset(config, 'train', provider_to_doc, provider, node_id) for provider in providers]
     else:
-        train_datasets = [build_dataset(config, 'train', node_id=0)]
+        train_datasets = [build_dataset(config, 'train', node_id=node_id)]
 
     train_data_loaders = [DataLoader(train_dataset, batch_size=config.batch_size, shuffle=False,
                                      collate_fn=collate_fn) for train_dataset in train_datasets]
