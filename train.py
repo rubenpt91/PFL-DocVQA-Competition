@@ -53,7 +53,7 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl
         model.model.load_state_dict(state_dict, strict=True)
         model.model.train()
 
-        # perform n provider iterations (each provider has their own dataloader)
+        # perform n provider iterations (each provider has their own dataloader in the non-private case)
         for iter in range(provider_iterations):
             for batch_idx, batch in enumerate(tqdm(provider_dataloader)):
                 gt_answers = batch['answers']
@@ -144,22 +144,7 @@ class FlowerClient(fl.client.NumPyClient):
 
     def fit(self, parameters, config):
         set_parameters(self.model, parameters)
-        # debug: write parameters to file each round
-        with open("parameters.txt", "ab") as f:
-            f.write(b"\n")
-            np.savetxt(f, np.array([sum([np.sum(parameters[i]) for i in range(len(parameters))])]))
-            np.savetxt(f, np.array([sum([np.mean(parameters[i]) for i in range(len(parameters))])]))
-            np.savetxt(f, np.array([sum([np.std(parameters[i]) for i in range(len(parameters))])]))
         updated_weigths = fl_train(self.trainloader, self.model, self.optimizer, self.lr_scheduler, self.evaluator, self.logger, config)
-
-        # debug: write updated weights to file each round
-        with open("fit_weights.txt", "ab") as f:
-            f.write(b"\n")
-            np.savetxt(f, updated_weigths[0].numpy()[:10, 0])
-            f.write(b"\n")
-            np.savetxt(f, np.array([sum([np.sum(updated_weigths[i].numpy()) for i in range(len(updated_weigths))])]))
-            np.savetxt(f, np.array([sum([np.mean(updated_weigths[i].numpy()) for i in range(len(updated_weigths))])]))
-            np.savetxt(f, np.array([sum([np.std(updated_weigths[i].numpy()) for i in range(len(updated_weigths))])]))
         return updated_weigths, 1, {}  # TODO 1 ==> Number of selected clients.
 
     def evaluate(self, parameters, config):
