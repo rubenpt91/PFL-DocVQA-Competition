@@ -1,3 +1,4 @@
+import gc
 import os, time, datetime
 from tqdm import tqdm
 
@@ -78,7 +79,10 @@ def evaluate(data_loader, model, evaluator, config):
         total_anls = total_anls/len(data_loader.dataset)
         total_ret_prec = total_ret_prec/len(data_loader.dataset)
         scores_by_samples = []
-
+    
+    # clear cache
+    torch.cuda.empty_cache()
+    gc.collect()
     return total_accuracies, total_anls, total_ret_prec, all_pred_answers, scores_by_samples
 
 
