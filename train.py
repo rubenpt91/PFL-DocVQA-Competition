@@ -41,6 +41,10 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl
     warnings.warn("\n\n" + str(config) + "\n\n")
     warnings.warn("\n\n" + str(fl_config) + "\n\n")
     agg_update = None
+
+    if not TRAIN_PRIVATE and len(data_loaders) > 1:
+        raise ValueError("Non private training should only use one data loader.")
+
     for provider_dataloader in data_loaders:
         total_loss = 0
 
@@ -88,30 +92,34 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl
         # Get the update
         new_update = [w - w_0 for w, w_0 in zip(list(model.model.state_dict().values()), parameters)]  # Get model update
 
-        # flatten update
-        shapes = get_shape(new_update)
-        new_update = flatten_params(new_update)
-
-        # clip update:
         if TRAIN_PRIVATE:
+            # flatten update
+            shapes = get_shape(new_update)
+            new_update = flatten_params(new_update)
+
+            # clip update:
             new_update = clip_parameters(new_update, clip_norm=sensitivity)
 
-        # Aggregate (Avg)
-        if agg_update is None:
-            agg_update = new_update
-        else:
-            # agg_update = [np.add(agg_upd, n_upd) for agg_upd, n_upd in zip(agg_update, new_update)]
-            agg_update += new_update
+            # Aggregate (Avg)
+            if agg_update is None:
+                agg_update = new_update
+            else:
+                agg_update += new_update
 
-    # Add the noise
+   
+    # handle DP after all updates are done
     if TRAIN_PRIVATE:
-        agg_update = add_dp_noise(agg_update, noise_multiplier=noise_multiplier, sensitity=sensitivity)
+            # Add the noise
+            agg_update = add_dp_noise(agg_update, noise_multiplier=noise_multiplier, sensitity=sensitivity)
 
-    # Divide the noisy aggregated update by the number of providers (100)
-    agg_update = torch.div(agg_update, len(data_loaders))
+            # Divide the noisy aggregated update by the number of providers (100)
+            agg_update = torch.div(agg_update, len(data_loaders))
 
-    # Add the noisy update to the original model
-    agg_update = reconstruct(agg_update, shapes)
+            # Add the noisy update to the original model
+            agg_update = reconstruct(agg_update, shapes)
+    else:
+        agg_update = new_update
+
     upd_weights = [torch.add(agg_upd, w_0).cpu() for agg_upd, w_0 in zip(agg_update, copy.deepcopy(parameters))]
 
     # Send the weights to the server
