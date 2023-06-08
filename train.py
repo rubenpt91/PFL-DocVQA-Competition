@@ -26,6 +26,7 @@ import pdb
 
 import numpy as np
 
+TRAIN_PRIVATE = False
 
 def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl_config):
     """
@@ -36,7 +37,7 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl
     parameters = copy.deepcopy(list(model.model.state_dict().values()))
     sensitivity = config.sensitivity
     noise_multiplier = 0
-    train_private = False
+    TRAIN_PRIVATE = False
     provider_iterations = 1
 
     warnings.warn("\n\n" + str(config) + "\n\n")
@@ -94,7 +95,7 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl
         new_update = flatten_params(new_update)
 
         # clip update:
-        if train_private:
+        if TRAIN_PRIVATE:
             new_update = clip_parameters(new_update, clip_norm=sensitivity)
 
 
@@ -106,7 +107,7 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl
             agg_update += new_update
 
     # Add the noise
-    if train_private:
+    if TRAIN_PRIVATE:
         add_dp_noise(agg_update, noise_multiplier=noise_multiplier, sensitity=sensitivity)
 
     # Divide the noisy aggregated update by the number of providers (100)
@@ -177,7 +178,22 @@ class FlowerClient(fl.client.NumPyClient):
 
     def fit(self, parameters, config):
         set_parameters(self.model, parameters)
+        # debug: write parameters to file each round
+        with open("parameters.txt", "ab") as f:
+            f.write(b"\n")
+            np.savetxt(f, np.array([sum([np.sum(parameters[i]) for i in range(len(parameters))])]))
+            np.savetxt(f, np.array([sum([np.mean(parameters[i]) for i in range(len(parameters))])]))
+            np.savetxt(f, np.array([sum([np.std(parameters[i]) for i in range(len(parameters))])]))   
         updated_weigths = fl_train(self.trainloader, self.model, self.optimizer, self.lr_scheduler, self.evaluator, self.logger, config)
+
+        # debug: write updated weights to file each round
+        with open("fit_weights.txt", "ab") as f:
+            f.write(b"\n")
+            np.savetxt(f, updated_weigths[0].numpy()[:10, 0])
+            f.write(b"\n")
+            np.savetxt(f, np.array([sum([np.sum(updated_weigths[i].numpy()) for i in range(len(updated_weigths))])]))
+            np.savetxt(f, np.array([sum([np.mean(updated_weigths[i].numpy()) for i in range(len(updated_weigths))])]))
+            np.savetxt(f, np.array([sum([np.std(updated_weigths[i].numpy()) for i in range(len(updated_weigths))])]))            
         return updated_weigths, 1, {}  # TODO 1 ==> Number of selected clients.
 
     def evaluate(self, parameters, config):
@@ -192,8 +208,6 @@ class FlowerClient(fl.client.NumPyClient):
 
 def client_fn(node_id):
     """Create a Flower client representing a single organization."""
-    model = build_model(config)  # TODO Should already be in CUDA
-
     # pick a subset of providers
     provider_to_doc = json.load(open(config.provider_docs, 'r'))
     provider_to_doc = provider_to_doc["node_" + node_id]
@@ -209,7 +223,6 @@ def client_fn(node_id):
     
     optimizer, lr_scheduler = build_optimizer(model, length_train_loader=len(train_data_loaders), config=config)
     
-
     evaluator = Evaluator(case_sensitive=False)
     logger = Logger(config=config)
     return FlowerClient(model, train_data_loaders, val_data_loader, optimizer, lr_scheduler, evaluator, logger, config)
