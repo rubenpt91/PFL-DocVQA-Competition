@@ -114,7 +114,7 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl
 
     # Add the noisy update to the original model
     agg_update = reconstruct(agg_update, shapes)
-    upd_weights = [np.add(agg_upd, w_0) for agg_upd, w_0 in zip(agg_update, copy.deepcopy(parameters))]
+    upd_weights = [torch.add(agg_upd, w_0).cpu() for agg_upd, w_0 in zip(agg_update, copy.deepcopy(parameters))]
 
     # Send the weights to the server
     logger.logger.log(log_dict, step=logger.current_epoch * logger.len_dataset + batch_idx)
