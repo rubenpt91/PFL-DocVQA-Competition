@@ -107,17 +107,16 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl
             else:
                 agg_update += new_update
 
-   
     # handle DP after all updates are done
     if TRAIN_PRIVATE:
-            # Add the noise
-            agg_update = add_dp_noise(agg_update, noise_multiplier=noise_multiplier, sensitity=sensitivity)
+        # Add the noise
+        agg_update = add_dp_noise(agg_update, noise_multiplier=noise_multiplier, sensitity=sensitivity)
 
-            # Divide the noisy aggregated update by the number of providers (100)
-            agg_update = torch.div(agg_update, len(data_loaders))
+        # Divide the noisy aggregated update by the number of providers (100)
+        agg_update = torch.div(agg_update, len(data_loaders))
 
-            # Add the noisy update to the original model
-            agg_update = reconstruct(agg_update, shapes)
+        # Add the noisy update to the original model
+        agg_update = reconstruct(agg_update, shapes)
     else:
         agg_update = new_update
 
@@ -125,10 +124,7 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl
 
     # Send the weights to the server
     logger.logger.log(log_dict, step=logger.current_epoch * logger.len_dataset + batch_idx)
-    
-    # clear cache
-    torch.cuda.empty_cache()
-    gc.collect()
+
     return upd_weights
 
 
@@ -252,4 +248,5 @@ if __name__ == '__main__':
         config=fl.server.ServerConfig(num_rounds=config.num_rounds),
         strategy=strategy,
         client_resources=client_resources,
+        ray_init_args={"local_mode": True}
     )
