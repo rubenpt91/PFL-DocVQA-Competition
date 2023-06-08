@@ -37,7 +37,7 @@ def build_model(config):
     return model
 
 
-def build_dataset(config, split):
+def build_dataset(config, split, node_id=None):
 
     # Specify special params for data processing depending on the model used.
     dataset_kwargs = {}
@@ -48,10 +48,41 @@ def build_dataset(config, split):
     if config.model_name.lower() in ['vt5']:
         dataset_kwargs['use_images'] = True
 
+    if node_id is not None:
+        dataset_kwargs['node_id'] = node_id
+
     # Build dataset
     if config.dataset_name == 'DocILE-ELSA':
         from datasets.DocILE_ELSA import DocILE_ELSA
-        dataset = DocILE_ELSA(config.imdb_dir, config.images_dir, config.page_retrieval, split, dataset_kwargs)
+        dataset = DocILE_ELSA(config.imdb_dir, config.images_dir, split, dataset_kwargs)
+
+    else:
+        raise ValueError
+
+    return dataset
+
+
+def build_provider_dataset(config, split, provider_to_doc, provider, node_id=None):
+
+    # Specify special params for data processing depending on the model used.
+    dataset_kwargs = {}
+
+    if config.model_name.lower() in ['vt5']:
+        dataset_kwargs['get_raw_ocr_data'] = True
+
+    if config.model_name.lower() in ['vt5']:
+        dataset_kwargs['use_images'] = True
+
+    if node_id:
+        dataset_kwargs['node_id'] = node_id
+
+
+    # Build dataset
+
+    indexes = provider_to_doc[provider]
+    if config.dataset_name == 'DocILE-ELSA':
+        from datasets.DocILE_ELSA import DocILE_ELSA
+        dataset = DocILE_ELSA(config.imdb_dir, config.images_dir, split, dataset_kwargs, indexes)
 
     else:
         raise ValueError

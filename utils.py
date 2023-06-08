@@ -26,8 +26,19 @@ def parse_args():
     parser.add_argument('--seed', type=int, help='Seed to allow reproducibility.')
     parser.add_argument('--save-dir', type=str, help='Seed to allow reproducibility.')
 
-    parser.add_argument('--data-parallel', action='store_true', help='Boolean to overwrite data-parallel arg in config parallelize the execution.')
-    parser.add_argument('--no-data-parallel', action='store_false', dest='data_parallel', help='Boolean to overwrite data-parallel arg in config to indicate to parallelize the execution.')
+    # Cuda DPP
+    parser.add_argument('--distributed', action='store_true', default=False, help='To use Distributed Data parallel.')
+
+    # Flower
+    parser.add_argument('--flower', action='store_true', default=False, help='Use FL Flower.')
+    parser.add_argument('--num_clients', type=int, help='Number of clients for FL.')
+    parser.add_argument('--num_rounds', type=int, help='Number of FL rounds.')
+
+    parser.add_argument('--sensitivity', type=float, help='Upper bound of the contribution per group (provider).')
+    parser.add_argument('--noise_multiplier', type=float, help='Noise multiplier.')
+    parser.add_argument('--client_sampling_probability', type=float, help='.')  # (Number of selected clients / total number of clients)
+    parser.add_argument('--iteration_per_fl_round', type=int, help='Number of iterations per provider during each FL round..')
+    parser.add_argument('--providers_per_fl_round', type=int, help='Number of groups providers) sampled in each FL Round.')
     return parser.parse_args()
 
 
@@ -102,6 +113,10 @@ def check_config(config):
     elif page_retrieval == 'none' and config.dataset_name not in ['SP-DocVQA']:
         print("Page retrieval can't be none for dataset '{:s}'. This is intended only for single page datasets. Please specify in the method config file the 'page_retrieval' setup to one of the following: [oracle, concat, logits, custom] ".format(config.dataset_name))
 
+    if not config.flower:
+        if 'num_clients' in config and config.num_clients > 1:
+            raise ValueError("Number of clients '{:d}' but Flower framework is not activated. Please, indicate 'flower' in arguments if you want to use Federated Learning.".format(config.num_clients))
+
     if 'save_dir' in config:
         if not config.save_dir.endswith('/'):
             config.save_dir = config.save_dir + '/'
@@ -123,6 +138,9 @@ def load_config(args):
     # config = {'dataset_params': dataset_config, 'model_params': model_config, 'training_params': training_config}
     config = {**dataset_config, **model_config, **training_config}
 
+    # config['group_sampling_probability'] = config['client_sampling_probability'] * 50 / 340  # (Number of selected clients / total number of clients) * (Number of selected groups / MIN(number of groups among the clients))
+    config['group_sampling_probability'] = args.client_sampling_probability  # 0.1960  # config['client_sampling_probability'] * 50 / 340  # (Number of selected clients / total number of clients) * (Number of selected groups / MIN(number of groups among the clients))
+
     config = config | {k: v for k, v in args._get_kwargs() if v is not None}
     config.pop('model')
     config.pop('dataset')
@@ -133,6 +151,7 @@ def load_config(args):
     if 'seed' not in config:
         print("Seed not specified. Setting default seed to '{:d}'".format(42))
         config.seed = 42
+
 
     check_config(config)
 

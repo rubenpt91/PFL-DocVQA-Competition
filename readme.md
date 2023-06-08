@@ -22,10 +22,11 @@ In addition, if you need the images. We will need to download the original datas
 
 ## DocILE-ELSA models weights
 
-| Model 		   | Weights HF name								                                                                                                               | Parameters 	|
-|:-----------|:--------------------------------------------------------------------------------------------------------------------------------------|:-------------:|
-| T5 base			 | [rubentito/vt5-base-docile-elsa]([rubentito/t5-base-docile-elsa](https://huggingface.co/rubentito/vt5-base-docile-elsa))		            |  			| 
-| VT5 base			| [rubentito/vt5-base-docile-elsa]([rubentito/vt5-base-docile-elsa](https://huggingface.co/rubentito/vt5-base-docile-elsa))		           |  			| 
+| Model 		   | Weights HF name								                                                                   | Parameters 	|
+|:-----------|:------------------------------------------------------------------------------------------|:-------------:|
+| T5 base			 | [rubentito/t5-base-mpdocvqa](https://huggingface.co/rubentito/t5-base-mpdocvqa)		 |  			| 
+| T5 base			 | [rubentito/t5-base-docile-elsa](https://huggingface.co/rubentito/t5-base-docile-elsa)		   |  			| 
+| VT5 base			| [rubentito/vt5-base-docile-elsa](https://huggingface.co/rubentito/vt5-base-docile-elsa)		 |  			| 
 
 ## Metrics
 
