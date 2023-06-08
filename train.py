@@ -2,6 +2,7 @@ import os, copy
 import warnings
 import json
 import random
+from differential_privacy.dp_utils import add_dp_noise, clip_parameters, flatten_params, get_shape, reconstruct
 
 import flwr as fl
 import numpy as np
@@ -24,30 +25,22 @@ from checkpoint import save_model
 import pdb
 
 import numpy as np
-from numpy import linalg as LA
 
 
 def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl_config):
     model.model.train()
-    # parameters = get_parameters(model)
-    # parameters = [val.cpu().numpy() for _, val in model.model.state_dict().items()]
     param_keys = list(model.model.state_dict().keys())
     parameters = copy.deepcopy(list(model.model.state_dict().values()))
-    # parameters = list(model.model.state_dict().values())[:]
-    # copy.deepcopy(list(model.model.state_dict().values()))
-
-    # sensitivity = 0.5
     sensitivity = config.sensitivity
     noise_multiplier = 0
-    # noise_multiplier = 4.2
-    # noise_muliplier = config.noise_multiplier
+    train_private = False
+
     warnings.warn("\n\n" + str(config) + "\n\n")
     warnings.warn("\n\n" + str(fl_config) + "\n\n")
     agg_update = None
     for provider_dataloader in data_loaders:
         total_loss = 0
 
-        # set_parameters(model, parameters)
         state_dict = OrderedDict({k: v for k, v in zip(param_keys, parameters)})
         model.model.load_state_dict(state_dict, strict=True)
 
@@ -91,23 +84,16 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl
 
         # After all the iterations:
         # Get the update
-        # new_update = [w - w_0 for w, w_0 in zip(get_parameters(model), copy.deepcopy(parameters))]  # Get model update
         new_update = [w - w_0 for w, w_0 in zip(list(model.model.state_dict().values()), parameters)]  # Get model update
 
-        # Clip it
+        # flatten update
         shapes = get_shape(new_update)
         new_update = flatten_params(new_update)
-        # if sensitivity != 0:  # TODO Boolean to control this
-        # new_update = clip_norm(new_update, sensitivity)
 
-        norm_list.append(compute_norm(new_update).item())
-        warnings.warn(str(norm_list))
+        # clip update:
+        if train_private:
+            new_update = clip_parameters(new_update, clip_norm=sensitivity)
 
-        with open("norms.txt", "a") as f:
-            f.write(str(norm_list[-1]) + "\n")
-
-        # new_update = torch.nn.utils.clip_grad_norm_([torch.from_numpy(element) for element in new_update],  max_norm=sensitivity, norm_type=2)
-        # new_update = [x.numpy() for x in new_update]
 
         # Aggregate (Avg)
         if agg_update is None:
@@ -117,14 +103,10 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl
             agg_update += new_update
 
     # Add the noise
-    if sensitivity != 0:
-        # agg_update = [np.add(agg_upd, np.random.normal(0, scale=noise_multiplier)) for agg_upd in agg_update]
-        # agg_update = np.add(agg_update, np.random.normal(0, scale=noise_multiplier*sensitivity, size=len(agg_update)))
-        agg_update = torch.add(agg_update, torch.normal(mean=0, std=noise_multiplier * sensitivity, size=len(agg_update), device=agg_update.device))
+    if train_private:
+        add_dp_noise(agg_update, noise_multiplier=noise_multiplier, sensitity=sensitivity)
 
     # Divide the noisy aggregated update by the number of providers (100)
-    # agg_update = [np.divide(agg_upd, len(data_loaders)) for agg_upd in agg_update]
-    # agg_update = np.divide(agg_update, len(data_loaders))
     agg_update = torch.div(agg_update, len(data_loaders))
 
     # Add the noisy update to the original model
@@ -135,12 +117,6 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl
     logger.logger.log(log_dict, step=logger.current_epoch * logger.len_dataset + batch_idx)
 
     return upd_weights
-
-
-# def seed_worker(worker_id):
-#     worker_seed = torch.initial_seed() % 2 ** 32
-#     np.random.seed(worker_seed)
-#     np.seed(worker_seed)
 
 
 def train(model, config):

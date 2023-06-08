@@ -1,25 +1,17 @@
 import torch
 
-def flatten_params(update):
+def flatten_params(parameters):
     """
     Flat the list of tensors (layer params) into a single vector.
     """
-    # return np.concatenate([np.array(element).ravel() for element in update])
-    return torch.cat([torch.flatten(element) for element in update])
+    return torch.cat([torch.flatten(layer_norm) for layer_norm in parameters])
 
-def compute_norm(a):
-    """
-    Compute L2 norm of a vector.
-    """
-    # return LA.norm(a, ord=2)
-    return torch.linalg.vector_norm(a, ord=2)
-
-def clip_norm(a,clip_norm):
+def clip_parameters(parameters, clip_norm):
     """
     Clip update parameters to clip norm.
     """
-    # return np.divide(a, np.maximum(1, np.divide(compute_norm(a), clip_norm)))
-    return torch.div(a, torch.max(torch.tensor(1, device=a.device), torch.div(compute_norm(a), clip_norm)))
+    current_norm = torch.linalg.vector_norm(parameters, ord=2)
+    return torch.div(parameters, torch.max(torch.tensor(1, device=parameters.device), torch.div(current_norm, clip_norm)))
 
 def get_shape(update):
     """
@@ -40,3 +32,9 @@ def reconstruct(flat_update,shapes):
         ind+=num_elements
 
     return rec_upd
+
+def add_dp_noise(data, noise_multiplier, sensitivity):
+    """
+    Add differential privacy noise to data.
+    """
+    return torch.add(data, torch.normal(mean=0, std=noise_multiplier * sensitivity, size=data.shape, device=data.device))
