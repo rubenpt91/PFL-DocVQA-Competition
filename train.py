@@ -232,5 +232,5 @@ if __name__ == '__main__':
         config=fl.server.ServerConfig(num_rounds=config.num_rounds),
         strategy=strategy,
         client_resources=client_resources,
-        ray_init_args={"local_mode": True}
+        ray_init_args={"local_mode": True} # run in one process to avoid zombie ray processes
     )
