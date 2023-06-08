@@ -4,6 +4,7 @@ import os
 import random
 import warnings
 from collections import OrderedDict
+import gc
 
 import flwr as fl
 import numpy as np
@@ -124,7 +125,10 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl
 
     # Send the weights to the server
     logger.logger.log(log_dict, step=logger.current_epoch * logger.len_dataset + batch_idx)
-
+    
+    # clear cache
+    torch.cuda.empty_cache()
+    gc.collect()
     return upd_weights
 
 
