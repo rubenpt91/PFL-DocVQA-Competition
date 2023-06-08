@@ -48,7 +48,7 @@ def build_dataset(config, split, node_id=None):
     if config.model_name.lower() in ['vt5']:
         dataset_kwargs['use_images'] = True
 
-    if node_id:
+    if node_id is not None:
         dataset_kwargs['node_id'] = node_id
 
     # Build dataset
