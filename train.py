@@ -4,7 +4,6 @@ import os
 import random
 import warnings
 from collections import OrderedDict
-import gc
 
 import flwr as fl
 import numpy as np
