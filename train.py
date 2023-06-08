@@ -1,32 +1,30 @@
-import os, copy
-import warnings
+import copy
 import json
+import os
 import random
-from differential_privacy.dp_utils import add_dp_noise, clip_parameters, flatten_params, get_shape, reconstruct
+import warnings
+from collections import OrderedDict
 
 import flwr as fl
 import numpy as np
 import torch
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from torch.utils.data import DataLoader
-
+from build_utils import (build_dataset, build_model, build_optimizer,
+                         build_provider_dataset)
 from datasets.BaseDataset import collate_fn
+from differential_privacy.dp_utils import (add_dp_noise, clip_parameters,
+                                           flatten_params, get_shape,
+                                           reconstruct)
 from eval import evaluate
-from metrics import Evaluator
-from build_utils import build_model, build_optimizer, build_dataset, build_provider_dataset
-from utils import parse_args, load_config, seed_everything
-from utils_parallel import get_parameters, set_parameters, weighted_average
-from collections import OrderedDict
-
 from logger import Logger
-from checkpoint import save_model
-
-import pdb
-
-import numpy as np
+from metrics import Evaluator
+from utils import load_config, parse_args, seed_everything
+from utils_parallel import get_parameters, set_parameters, weighted_average
 
 TRAIN_PRIVATE = False
+
 
 def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl_config):
     """
@@ -98,7 +96,6 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl
         if TRAIN_PRIVATE:
             new_update = clip_parameters(new_update, clip_norm=sensitivity)
 
-
         # Aggregate (Avg)
         if agg_update is None:
             agg_update = new_update
@@ -145,7 +142,7 @@ class FlowerClient(fl.client.NumPyClient):
             f.write(b"\n")
             np.savetxt(f, np.array([sum([np.sum(parameters[i]) for i in range(len(parameters))])]))
             np.savetxt(f, np.array([sum([np.mean(parameters[i]) for i in range(len(parameters))])]))
-            np.savetxt(f, np.array([sum([np.std(parameters[i]) for i in range(len(parameters))])]))   
+            np.savetxt(f, np.array([sum([np.std(parameters[i]) for i in range(len(parameters))])]))
         updated_weigths = fl_train(self.trainloader, self.model, self.optimizer, self.lr_scheduler, self.evaluator, self.logger, config)
 
         # debug: write updated weights to file each round
@@ -155,17 +152,17 @@ class FlowerClient(fl.client.NumPyClient):
             f.write(b"\n")
             np.savetxt(f, np.array([sum([np.sum(updated_weigths[i].numpy()) for i in range(len(updated_weigths))])]))
             np.savetxt(f, np.array([sum([np.mean(updated_weigths[i].numpy()) for i in range(len(updated_weigths))])]))
-            np.savetxt(f, np.array([sum([np.std(updated_weigths[i].numpy()) for i in range(len(updated_weigths))])]))            
+            np.savetxt(f, np.array([sum([np.std(updated_weigths[i].numpy()) for i in range(len(updated_weigths))])]))
         return updated_weigths, 1, {}  # TODO 1 ==> Number of selected clients.
 
     def evaluate(self, parameters, config):
         set_parameters(self.model, parameters)
-        accuracy, anls, ret_prec, _, _ = evaluate(self.valloader, self.model, self.evaluator, config)  # data_loader, model, evaluator, **kwargs
+        accuracy, anls, ret_prec, _, _ = evaluate(self.valloader, self.model, self.evaluator,
+                                                  config)  # data_loader, model, evaluator, **kwargs
         is_updated = self.evaluator.update_global_metrics(accuracy, anls, 0)
         self.logger.log_val_metrics(accuracy, anls, ret_prec, update_best=is_updated)
 
         return float(0), len(self.valloader), {"accuracy": float(accuracy), "anls": anls}
-
 
 
 def client_fn(node_id):
@@ -181,14 +178,15 @@ def client_fn(node_id):
     else:
         train_datasets = [build_dataset(config, 'train', node_id=0)]
 
-    train_data_loaders = [DataLoader(train_dataset, batch_size=config.batch_size, shuffle=False, collate_fn=collate_fn) for train_dataset in train_datasets]
+    train_data_loaders = [DataLoader(train_dataset, batch_size=config.batch_size, shuffle=False,
+                                     collate_fn=collate_fn) for train_dataset in train_datasets]
 
     # create validation data loader
     val_dataset = build_dataset(config, 'val')
     val_data_loader = DataLoader(val_dataset, batch_size=config.batch_size, shuffle=False, collate_fn=collate_fn)
-    
+
     optimizer, lr_scheduler = build_optimizer(model, length_train_loader=len(train_data_loaders), config=config)
-    
+
     evaluator = Evaluator(case_sensitive=False)
     logger = Logger(config=config)
     return FlowerClient(model, train_data_loaders, val_data_loader, optimizer, lr_scheduler, evaluator, logger, config)
@@ -248,4 +246,3 @@ if __name__ == '__main__':
             strategy=strategy,
             client_resources=client_resources,
         )
-
