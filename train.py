@@ -35,6 +35,8 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl
     if not config.use_dp and len(data_loaders) > 1:
         raise ValueError("Non private training should only use one data loader.")
 
+    warnings.warn("LEN" + str(len(data_loaders)))
+    tqdm_multiplier = len(data_loaders) * config.iteration_per_fl_round
     for provider_dataloader in data_loaders:
         total_loss = 0
 
@@ -99,7 +101,7 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl
     # Handle DP after all updates are done
     if config.use_dp:
         # Add the noise
-        agg_update = add_dp_noise(agg_update, noise_multiplier=config.noise_multiplier, sensitity=config.sensitivity)
+        agg_update = add_dp_noise(agg_update, noise_multiplier=config.noise_multiplier, sensitivity=config.sensitivity)
 
         # Divide the noisy aggregated update by the number of providers (100)
         agg_update = torch.div(agg_update, len(data_loaders))
