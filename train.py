@@ -207,42 +207,37 @@ if __name__ == '__main__':
     config = load_config(args)
     seed_everything(config.seed)
 
-    if not config.flower:
-        model = build_model(config)
-        train(model, config)
+    # Set `MASTER_ADDR` and `MASTER_PORT` environment variables
+    os.environ['MASTER_ADDR'] = 'localhost'
+    os.environ['MASTER_PORT'] = '9957'
 
-    else:
-        # Set `MASTER_ADDR` and `MASTER_PORT` environment variables
-        os.environ['MASTER_ADDR'] = 'localhost'
-        os.environ['MASTER_PORT'] = '9957'
+    NUM_CLIENTS = config.num_clients
+    model = build_model(config)  # TODO Should already be in CUDA
+    params = get_parameters(model)
 
-        NUM_CLIENTS = config.num_clients
-        model = build_model(config)  # TODO Should already be in CUDA
-        params = get_parameters(model)
+    # Create FedAvg strategy
+    strategy = fl.server.strategy.FedAvg(
+        # fraction_fit=config.client_sampling_probability,  # Sample 100% of available clients for training
+        fraction_fit=0.33,  # Sample 100% of available clients for training
+        fraction_evaluate=1,  # Sample 50% of available clients for evaluation
+        min_fit_clients=NUM_CLIENTS,  # Never sample less than 10 clients for training
+        min_evaluate_clients=NUM_CLIENTS,  # Never sample less than 5 clients for evaluation
+        min_available_clients=NUM_CLIENTS,  # Wait until all 10 clients are available
+        evaluate_metrics_aggregation_fn=weighted_average,  # <-- pass the metric aggregation function
+        initial_parameters=fl.common.ndarrays_to_parameters(params),
+        on_fit_config_fn=fit_config
+    )
 
-        # Create FedAvg strategy
-        strategy = fl.server.strategy.FedAvg(
-            # fraction_fit=config.client_sampling_probability,  # Sample 100% of available clients for training
-            fraction_fit=0.33,  # Sample 100% of available clients for training
-            fraction_evaluate=1,  # Sample 50% of available clients for evaluation
-            min_fit_clients=NUM_CLIENTS,  # Never sample less than 10 clients for training
-            min_evaluate_clients=NUM_CLIENTS,  # Never sample less than 5 clients for evaluation
-            min_available_clients=NUM_CLIENTS,  # Wait until all 10 clients are available
-            evaluate_metrics_aggregation_fn=weighted_average,  # <-- pass the metric aggregation function
-            initial_parameters=fl.common.ndarrays_to_parameters(params),
-            on_fit_config_fn=fit_config
-        )
+    # Specify client resources if you need GPU (defaults to 1 CPU and 0 GPU)
+    client_resources = None
+    if config.device == "cuda":
+        client_resources = {"num_gpus": 1}  # TODO Check number of GPUs
 
-        # Specify client resources if you need GPU (defaults to 1 CPU and 0 GPU)
-        client_resources = None
-        if config.device == "cuda":
-            client_resources = {"num_gpus": 1}  # TODO Check number of GPUs
-
-        # Start simulation
-        fl.simulation.start_simulation(
-            client_fn=client_fn,
-            num_clients=NUM_CLIENTS,
-            config=fl.server.ServerConfig(num_rounds=config.num_rounds),
-            strategy=strategy,
-            client_resources=client_resources,
-        )
+    # Start simulation
+    fl.simulation.start_simulation(
+        client_fn=client_fn,
+        num_clients=NUM_CLIENTS,
+        config=fl.server.ServerConfig(num_rounds=config.num_rounds),
+        strategy=strategy,
+        client_resources=client_resources,
+    )
