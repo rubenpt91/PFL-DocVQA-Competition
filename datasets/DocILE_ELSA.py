@@ -11,10 +11,10 @@ class DocILE_ELSA(Dataset):
 
     def __init__(self, imbd_dir, images_dir, split, kwargs, indexes=None):
 
-        if 'node_id' not in kwargs:
+        if 'client_id' not in kwargs:
             data = np.load(os.path.join(imbd_dir, "imdb_{:s}.npy".format(split)), allow_pickle=True)
         else:
-            data = np.load(os.path.join(imbd_dir, "imdb_{:s}_node_{:}.npy".format(split, kwargs['node_id'])), allow_pickle=True)
+            data = np.load(os.path.join(imbd_dir, "imdb_{:s}_client_{:}.npy".format(split, kwargs['client_id'])), allow_pickle=True)
 
         # keep only data points of given provider
         if indexes:
@@ -27,8 +27,7 @@ class DocILE_ELSA(Dataset):
 
         self.use_images = kwargs.get('use_images', False)
         self.get_raw_ocr_data = kwargs.get('get_raw_ocr_data', False)
-        self.max_pages = kwargs.get('max_pages', 1)
-        self.get_doc_id = False
+
 
     def __len__(self):
         return len(self.imdb)  #  min(20, len(self.imdb))
@@ -53,63 +52,33 @@ class DocILE_ELSA(Dataset):
 
         question = record["question"]
         answers = list(set(answer.lower() for answer in record['answers'])) if 'answers' in record else None
-        answer_page_idx = record['answer_page_idx']
+        # answer_page_idx = record['answer_page_idx']
 
-        """ Prepared for Single Page <====
-        page_context = " ".join([word.lower() for word in record['ocr_tokens'][answer_page_idx]])
-        context_page_corresp = [answer_page_idx] * len(record['ocr_tokens'][answer_page_idx])
+        context = " ".join([word.lower() for word in record['ocr_tokens']])
 
         if self.get_raw_ocr_data:
-            if len(record['ocr_tokens'][answer_page_idx]) == 0:
+            if len(record['ocr_tokens']) == 0:
                 words = []
                 boxes = np.empty([0, 4])
                                  
             else:
-                words = [word.lower() for word in record['ocr_tokens'][answer_page_idx]]
-                boxes = np.array([bbox for bbox in record['ocr_normalized_boxes'][answer_page_idx]])
+                words = [word.lower() for word in record['ocr_tokens']]
+                boxes = np.array([bbox for bbox in record['ocr_normalized_boxes']])
 
         if self.use_images:
-            image_names = os.path.join(self.images_dir, "{:s}".format(record['image_name'][answer_page_idx]))
+            image_names = os.path.join(self.images_dir, "{:s}".format(record['image_name']))
             images = Image.open(image_names).convert("RGB")
-        """
 
-        num_pages = record['total_doc_pages']
-        if True:  # self.page_retrieval == 'concat':
-            context = ""
-            context_page_corresp = []
-            for page_ix in range(num_pages):
-                page_context = " ".join([word.lower() for word in record['ocr_tokens'][page_ix]])
-                context += " " + page_context
-                context_page_corresp.extend([-1] + [page_ix]*len(page_context))
-
-            context = context.strip()
-            context_page_corresp = context_page_corresp[1:]
-
-            if self.get_raw_ocr_data:
-                words, boxes = [], []
-                for page_ix in range(num_pages):
-                    if len(record['ocr_tokens'][page_ix]) == 0:
-                        boxes.append(np.empty([0, 4]))
-                        continue
-
-                    words.extend([word.lower() for word in record['ocr_tokens'][page_ix]])
-                    boxes.append(np.array(record['ocr_normalized_boxes'][page_ix]))
-
-            if self.use_images:
-                image_names = [os.path.join(self.images_dir, "{:s}.jpg".format(image_name)) for image_name in record['image_name']]
-                images = [Image.open(img_path).convert("RGB") for img_path in image_names]
-                images, boxes = utils.create_grid_image(images, boxes)
-
-        start_idxs, end_idxs = self._get_start_end_idx(context, answers)
+        # start_idxs, end_idxs = self._get_start_end_idx(context, answers)
 
         sample_info = {
             # 'question_id': "{:s}_{:d}".format(record['set_name'], idx),
             'question_id': record.get('question_id', "{:s}-{:d}".format(record['set_name'], idx)),
             'questions': question,
             'contexts': context,
-            'context_page_corresp': context_page_corresp,
+            # 'context_page_corresp': context_page_corresp,
             'answers': answers,
-            'answer_page_idx': answer_page_idx,
+            # 'answer_page_idx': answer_page_idx,
         }
 
         if self.use_images:
@@ -119,15 +88,15 @@ class DocILE_ELSA(Dataset):
         if self.get_raw_ocr_data:
             sample_info['words'] = words
             sample_info['boxes'] = boxes
-            sample_info['num_pages'] = num_pages
+            # sample_info['num_pages'] = num_pages
 
-        else:  # Information for extractive models
-            # sample_info['context_page_corresp'] = context_page_corresp
-            sample_info['start_indxs'] = start_idxs
-            sample_info['end_indxs'] = end_idxs
+        # else:  # Information for extractive models
+        #     # sample_info['context_page_corresp'] = context_page_corresp
+        #     sample_info['start_indxs'] = start_idxs
+        #     sample_info['end_indxs'] = end_idxs
 
-        if self.get_doc_id:
-            sample_info['doc_id'] = [record['image_name'][page_ix] for page_ix in range(first_page, last_page)]
+        # if self.get_doc_id:
+        #     sample_info['doc_id'] = [record['image_name'][page_ix] for page_ix in range(first_page, last_page)]
 
         return sample_info
 

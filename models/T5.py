@@ -1,4 +1,6 @@
 import random
+import warnings
+
 import torch.nn as nn
 from transformers import T5Tokenizer, T5ForConditionalGeneration
 import models._model_utils as model_utils
@@ -34,40 +36,11 @@ class T5:
         context = batch['contexts']
         answers = batch['answers']
 
-        if self.page_retrieval == 'logits':
-            num_pages = batch['num_pages']
-            outputs = []
-            pred_answers = []
-            pred_answer_pages = []
-            pred_answers_conf = []
-            for batch_idx in range(len(context)):
-                input_ids, attention_mask, _ = self.prepare_inputs_for_vqa([question[batch_idx]]*num_pages[batch_idx], context[batch_idx])
-                pred_answer, logits = self.get_answer_from_model_output(input_ids, attention_mask) if return_pred_answer else None
+        input_ids, attention_mask, labels = self.prepare_inputs_for_vqa(question, context, answers)
+        outputs = self.model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
+        pred_answers, pred_answers_conf = self.get_answer_from_model_output(input_ids, attention_mask) if return_pred_answer else None
 
-                max_logits = -999999
-                answer_page = None
-                best_answer = None
-                for p_ix in range(len(input_ids)):
-                    if logits[p_ix] > max_logits:
-                        max_logits = logits[p_ix]
-                        answer_page = p_ix
-                        best_answer = pred_answer[p_ix]
-
-                outputs.append(None)  # outputs.append(document_outputs)  # During inference outputs are not used.
-                pred_answers.append(best_answer)
-                pred_answer_pages.append(answer_page)
-                pred_answers_conf.append(max_logits)
-
-        else:
-            input_ids, attention_mask, labels = self.prepare_inputs_for_vqa(question, context, answers)
-            outputs = self.model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
-            pred_answers, pred_answers_conf = self.get_answer_from_model_output(input_ids, attention_mask) if return_pred_answer else None
-
-            if self.page_retrieval == 'oracle':
-                pred_answer_pages = batch['answer_page_idx']
-
-            else:
-                pred_answer_pages = None
+        pred_answer_pages = None
 
         return outputs, pred_answers, pred_answer_pages, pred_answers_conf
 
