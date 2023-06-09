@@ -38,8 +38,20 @@ class Logger:
 
             log_config.update({
                 'FL Flower': True,
-                'Client Sampling Probability': config.client_sampling_probability,
-                'Providers per FL Round': config.providers_per_fl_round
+                'Num Clients': config.fl_params.num_clients,
+                'FL Rounds': config.fl_params.num_rounds,
+                'Iterations per FL Round': config.fl_params.iterations_per_fl_round
+            })
+
+        if config.use_dp:
+            tags.append('DP')
+
+            log_config.update({
+                'DP': True,
+                'DP Sensitivity': config.dp_params.sensitivity,
+                'Noise Multiplier': config.dp_params.noise_multiplier,
+                'Client sampling prob.': config.dp_params.client_sampling_probability,
+                'Providers per FL Round': config.dp_params.providers_per_fl_round
             })
 
         self.logger = wb.init(project="PFL-DocVQA-Competition", name=self.experiment_name, dir=self.log_folder, tags=tags, config=log_config)

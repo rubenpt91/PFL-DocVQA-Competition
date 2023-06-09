@@ -12,3 +12,15 @@ training_parameters:
   batch_size: 10
   train_epochs: 10
   warmup_iterations: 1000
+
+fl_parameters:
+  num_clients: 1
+  num_rounds: 100
+  iterations_per_fl_round: 2
+
+dp_parameters:
+  sensitivity: 0.5
+  noise_multiplier: 4.2
+  providers_per_fl_round: 5
+  client_sampling_probability: 0.1960
+
