@@ -1,7 +1,8 @@
 from communication.compute_tensor_size import get_bytes_for_tensor
 import os
 
-def log_communication(federated_round : int, sender : int, receiver: int, data : list, log_location: str):
+
+def log_communication(federated_round: int, sender: int, receiver: int, data: list, log_location: str):
     """
     Log the communication to a csv.
 
@@ -30,6 +31,7 @@ def log_communication(federated_round : int, sender : int, receiver: int, data :
     
     amount_of_bytes = sum([get_bytes_for_tensor(p) for p in data])
     _save_row_to_csv([federated_round, sender, receiver, amount_of_bytes], path=log_location)    
+
 
 def _save_row_to_csv(row : list, path : str):
     """

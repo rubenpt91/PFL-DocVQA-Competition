@@ -15,7 +15,7 @@ from tqdm import tqdm
 from build_utils import (build_dataset, build_model, build_optimizer, build_provider_dataset)
 from datasets.DocILE_ELSA import collate_fn
 from differential_privacy.dp_utils import (add_dp_noise, clip_parameters, flatten_params, get_shape, reconstruct)
-from eval import evaluate
+from eval import evaluate  # fl_centralized_evaluation
 from logger import Logger
 from metrics import Evaluator
 from utils import load_config, parse_args, seed_everything
@@ -23,7 +23,7 @@ from utils_parallel import get_parameters_from_model, set_parameters_model, weig
 from collections import OrderedDict
 
 
-def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl_config, cid):
+def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, client_id, fl_config):
     """
     Trains and returns the updated weights.
     """
@@ -118,15 +118,16 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl
 
     logger.logger.log(log_dict, step=logger.current_epoch * logger.len_dataset + batch_idx)
 
-    if fl_config["log_path"] is not None:
-        log_communication(federated_round=fl_config["current_round"], sender=cid, receiver=-1, data=parameters, log_location=fl_config["log_path"])
+    # if fl_config["log_path"] is not None:
+    if config.flower:
+        log_communication(federated_round=fl_config["current_round"], sender=client_id, receiver=-1, data=parameters, log_location=fl_config["log_path"])
         
     # Send the weights to the server
     return upd_weights
 
 
 class FlowerClient(fl.client.NumPyClient):
-    def __init__(self, model, trainloader, valloader, optimizer, lr_scheduler, evaluator, logger, config, cid):
+    def __init__(self, model, trainloader, valloader, optimizer, lr_scheduler, evaluator, logger, config, client_id):
         self.model = model
         self.trainloader = trainloader
         self.valloader = valloader
@@ -136,21 +137,22 @@ class FlowerClient(fl.client.NumPyClient):
         self.logger = logger
         self.logger.log_model_parameters(self.model)
         self.config = config
-        self.cid = cid
+        self.client_id = client_id
 
     def fit(self, parameters, config):
         self.set_parameters(self.model, parameters, config)
-        updated_weigths = fl_train(self.trainloader, self.model, self.optimizer, self.lr_scheduler, self.evaluator, self.logger, config, self.cid)
+        updated_weigths = fl_train(self.trainloader, self.model, self.optimizer, self.lr_scheduler, self.evaluator, self.logger, self.client_id, config)
         return updated_weigths, 1, {}  # TODO 1 ==> Number of selected clients.
 
     def set_parameters(self, model, parameters, config):
         params_dict = zip(model.model.state_dict().keys(), parameters)
         state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
         if config["log_path"] is not None:
-            log_communication(federated_round=config["current_round"], sender=-1, receiver=self.cid, data=parameters, log_location=config["log_path"])
+            log_communication(federated_round=config["current_round"], sender=-1, receiver=self.client_id, data=parameters, log_location=config["log_path"])
             
         model.model.load_state_dict(state_dict, strict=True)
 
+    # The `evaluate` function will be by Flower called after every round
     def evaluate(self, parameters, config):
         set_parameters_model(self.model, parameters)
         accuracy, anls, ret_prec, _, _ = evaluate(self.valloader, self.model, self.evaluator, config)  # data_loader, model, evaluator, **kwargs
@@ -194,9 +196,7 @@ def get_on_fit_config_fn(log_path):
     def fit_config(server_round: int):
         """Return training configuration dict for each round."""
         config = {
-            "batch_size": 32,
             "current_round": server_round,
-            "local_epochs": 2,
             "log_path": log_path
         }
         return config
@@ -204,12 +204,21 @@ def get_on_fit_config_fn(log_path):
     return fit_config
 
 
+# def get_on_eval_config_fn(config):
+#     """Return a function which returns training configurations."""
+#
+#     def evaluate_config(server_round: int):
+#         """Return evaluate configuration dict for each round."""
+#         config.current_round = server_round
+#
+#         return config
+#
+#     return evaluate_config
+
 def evaluate_config(server_round: int):
     """Return evaluate configuration dict for each round."""
-    config = {
-        "current_round": server_round,
-        "log_path": None,
-    }
+    config.current_round = server_round
+
     return config
 
 
@@ -226,7 +235,7 @@ if __name__ == '__main__':
     model = build_model(config)
     params = get_parameters_from_model(model)
 
-    # Create FedAvg strategy
+    # Create FedAvg strategyq
     strategy = fl.server.strategy.FedAvg(
         # fraction_fit=config.dp_params.client_sampling_probability,  # Sample 100% of available clients for training
         fraction_fit=0.33,  # Sample 100% of available clients for training
@@ -234,10 +243,14 @@ if __name__ == '__main__':
         min_fit_clients=NUM_CLIENTS,  # Never sample less than 10 clients for training
         min_evaluate_clients=NUM_CLIENTS,  # Never sample less than 5 clients for evaluation
         min_available_clients=NUM_CLIENTS,  # Wait until all 10 clients are available
+        # fit_metrics_aggregation_fn=weighted_average,  # <-- pass the metric aggregation function
         evaluate_metrics_aggregation_fn=weighted_average,  # <-- pass the metric aggregation function
         initial_parameters=fl.common.ndarrays_to_parameters(params),
-        on_fit_config_fn=get_on_fit_config_fn(config.log_path),
+        # on_fit_config_fn=get_on_fit_config_fn(config.log_path),
+        on_fit_config_fn=get_on_fit_config_fn(config.log_path),  # Log path hardcoded according to /save dir
+        # evaluate_fn=fl_centralized_evaluation,  # Pass the centralized evaluation function
         on_evaluate_config_fn=evaluate_config,
+        # on_evaluate_config_fn=get_on_eval_config_fn(config),
     )
 
     # Specify client resources if you need GPU (defaults to 1 CPU and 0 GPU)

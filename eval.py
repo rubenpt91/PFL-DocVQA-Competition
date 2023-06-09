@@ -148,6 +148,26 @@ def main_eval(config, local_rank=None):
         print("Results correctly saved in: {:s}".format(results_file))
 
 
+""" I think that in current version 1.4.0 centralized evaluation is still not working correctly.
+    See https://github.com/adap/flower/blob/1982f5f4f1f0698c56122b627b64b857e619f3bf/src/py/flwr/server/strategy/fedavg.py#L164, they send empty dictionary as config.
+"""
+def fl_centralized_evaluation(server_round, parameters, config):
+    model = build_model(config)
+    val_loader = build_dataset(config, 'val')
+    set_parameters_model(model, parameters)  # Update model with the latest parameters
+    # loss, accuracy = test(net, val_loader)
+
+    evaluator = Evaluator(case_sensitive=False)
+    logger = Logger(config=config)
+
+    accuracy, anls, ret_prec, _, _ = evaluate(val_loader, model, evaluator, config)  # data_loader, model, evaluator, **kwargs
+    is_updated = evaluator.update_global_metrics(accuracy, anls, 0)
+    logger.log_val_metrics(accuracy, anls, ret_prec, update_best=is_updated)
+
+    print("Server-side evaluation accuracy {:2.4f} / ANLS {1.6f}".format(accuracy, anls))
+    return float(0), len(val_loader), {"accuracy": float(accuracy), "anls": anls}
+
+
 class FlowerClient(fl.client.NumPyClient):
     def __init__(self, model, trainloader, valloader):
         self.model = model
