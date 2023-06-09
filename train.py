@@ -175,12 +175,13 @@ def client_fn(client_id):
         train_datasets = [build_dataset(config, 'train', client_id=client_id)]
 
     train_data_loaders = [DataLoader(train_dataset, batch_size=config.batch_size, shuffle=False, collate_fn=collate_fn) for train_dataset in train_datasets]
+    total_training_steps = [len(data_loader) for data_loader in train_data_loaders]
 
     # Create validation data loader
     val_dataset = build_dataset(config, 'val')
     val_data_loader = DataLoader(val_dataset, batch_size=config.batch_size, shuffle=False, collate_fn=collate_fn)
 
-    optimizer, lr_scheduler = build_optimizer(model, length_train_loader=len(train_data_loaders), config=config)
+    optimizer, lr_scheduler = build_optimizer(model, length_train_loader=len(total_training_steps), config=config)
 
     evaluator = Evaluator(case_sensitive=False)
     logger = Logger(config=config)
