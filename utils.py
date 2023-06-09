@@ -109,7 +109,7 @@ def check_config(config):
     elif page_retrieval in ['concat', 'logits'] and getattr(config, 'max_pages', None) is not None:
         print("WARNING - Max pages ({:}) value is ignored for {:} page-retrieval setting.".format(getattr(config, 'max_pages'), page_retrieval))
 
-    elif page_retrieval == 'none' and config.dataset_name not in ['SP-DocVQA']:
+    elif page_retrieval == 'none' and config.dataset_name not in ['SP-DocVQA, DocILE-ELSA']:
         print("Page retrieval can't be none for dataset '{:s}'. This is intended only for single page datasets. Please specify in the method config file the 'page_retrieval' setup to one of the following: [oracle, concat, logits, custom] ".format(config.dataset_name))
 
     if not config.flower:
@@ -136,10 +136,15 @@ def load_config(args):
     # Keep FL and DP parameters to move it to a lower level config (config.fl_config / config.dp_config)
     fl_config = model_config.pop('fl_parameters') if 'fl_parameters' in model_config and args.flower else None
     dp_config = model_config.pop('dp_parameters') if 'dp_parameters' in model_config and args.use_dp else None
-
+    fl_dp_keys = []
     # Update (overwrite) the config yaml with input args.
-    fl_config.update({k: v for k, v in args._get_kwargs() if k in fl_config and v is not None})
-    dp_config.update({k: v for k, v in args._get_kwargs() if k in dp_config and v is not None})
+    if fl_config is not None:
+        fl_config.update({k: v for k, v in args._get_kwargs() if k in fl_config and v is not None})
+        fl_dp_keys.extend(fl_config.keys())
+
+    if dp_config is not None:
+        dp_config.update({k: v for k, v in args._get_kwargs() if k in dp_config and v is not None})
+        fl_dp_keys.extend(dp_config.keys())
 
     # Merge config values and input arguments.
     config = {**dataset_config, **model_config, **training_config}
@@ -148,7 +153,7 @@ def load_config(args):
     # Remove duplicate keys
     config.pop('model')
     config.pop('dataset')
-    [config.pop(k) for k in list(config.keys()) if (k in fl_config or k in dp_config)]
+    [config.pop(k) for k in list(config.keys()) if (k in fl_dp_keys)]
 
     config = argparse.Namespace(**config)
 
