@@ -13,7 +13,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from build_utils import (build_dataset, build_model, build_optimizer, build_provider_dataset)
-from datasets.BaseDataset import collate_fn
+from datasets.DocILE_ELSA import collate_fn
 from differential_privacy.dp_utils import (add_dp_noise, clip_parameters, flatten_params, get_shape, reconstruct)
 from eval import evaluate
 from logger import Logger
@@ -37,8 +37,10 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl
     if not config.use_dp and len(data_loaders) > 1:
         raise ValueError("Non private training should only use one data loader.")
 
+    warnings.warn("LEN: " + str(len(data_loaders)))
+    tqdm_multiplier = len(data_loaders) * config.fl_params.iterations_per_fl_round
     for provider_dataloader in data_loaders:
-        total_loss = 0
+        # total_loss = 0
 
         # set model weights to state of beginning of federated round
         state_dict = OrderedDict({k: v for k, v in zip(param_keys, parameters)})
@@ -46,7 +48,7 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl
         model.model.train()
 
         # perform n provider iterations (each provider has their own dataloader in the non-private case)
-        for iter in range(config.iteration_per_fl_round):
+        for iter in range(config.fl_params.iterations_per_fl_round):
             for batch_idx, batch in enumerate(tqdm(provider_dataloader)):
                 if batch_idx > 2:
                     break
@@ -54,7 +56,7 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl
                 outputs, pred_answers, pred_answer_page, answer_conf = model.forward(batch, return_pred_answer=True)
                 loss = outputs.loss + outputs.ret_loss if hasattr(outputs, 'ret_loss') else outputs.loss
 
-                total_loss += loss.item() / len(batch['question_id'])
+                # total_loss += loss.item() / len(batch['question_id'])
                 loss.backward()
                 optimizer.step()
                 lr_scheduler.step()
@@ -92,7 +94,7 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl
             new_update = flatten_params(new_update)
 
             # clip update:
-            new_update = clip_parameters(new_update, clip_norm=config.sensitivity)
+            new_update = clip_parameters(new_update, clip_norm=config.dp_params.sensitivity)
 
             # Aggregate (Avg)
             if agg_update is None:
@@ -103,7 +105,7 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl
     # Handle DP after all updates are done
     if config.use_dp:
         # Add the noise
-        agg_update = add_dp_noise(agg_update, noise_multiplier=config.noise_multiplier, sensitity=config.sensitivity)
+        agg_update = add_dp_noise(agg_update, noise_multiplier=config.dp_params.noise_multiplier, sensitivity=config.dp_params.sensitivity)
 
         # Divide the noisy aggregated update by the number of providers (100)
         agg_update = torch.div(agg_update, len(data_loaders))
@@ -115,11 +117,12 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl
 
     upd_weights = [torch.add(agg_upd, w_0).cpu() for agg_upd, w_0 in zip(agg_update, copy.deepcopy(parameters))]
 
-    # Send the weights to the server
     logger.logger.log(log_dict, step=logger.current_epoch * logger.len_dataset + batch_idx)
 
     if fl_config["log_path"] is not None:
         log_communication(federated_round=fl_config["current_round"], sender=cid, receiver=-1, data=parameters, log_location=fl_config["log_path"])
+        
+    # Send the weights to the server
     return upd_weights
 
 
@@ -145,14 +148,13 @@ class FlowerClient(fl.client.NumPyClient):
         params_dict = zip(model.model.state_dict().keys(), parameters)
         state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
         if config["log_path"] is not None:
-            log_communication(federated_round=config["current_round"], sender=-1,
-                              receiver=self.cid, data=parameters, log_location=config["log_path"])
+            log_communication(federated_round=config["current_round"], sender=-1, receiver=self.cid, data=parameters, log_location=config["log_path"])
+            
         model.model.load_state_dict(state_dict, strict=True)
 
     def evaluate(self, parameters, config):
         set_parameters_model(self.model, parameters)
-        accuracy, anls, ret_prec, _, _ = evaluate(self.valloader, self.model, self.evaluator,
-                                                  config)  # data_loader, model, evaluator, **kwargs
+        accuracy, anls, ret_prec, _, _ = evaluate(self.valloader, self.model, self.evaluator, config)  # data_loader, model, evaluator, **kwargs
         is_updated = self.evaluator.update_global_metrics(accuracy, anls, 0)
         self.logger.log_val_metrics(accuracy, anls, ret_prec, update_best=is_updated)
 
@@ -164,7 +166,7 @@ def client_fn(node_id):
     # Pick a subset of providers
     provider_to_doc = json.load(open(config.provider_docs, 'r'))
     provider_to_doc = provider_to_doc["node_" + node_id]
-    providers = random.sample(list(provider_to_doc.keys()), k=config.providers_per_fl_round)  # 50
+    providers = random.sample(list(provider_to_doc.keys()), k=config.dp_params.providers_per_fl_round)  # 50
 
     # Create a list of train data loaders with one dataloader per provider
     if config.use_dp:
@@ -172,8 +174,7 @@ def client_fn(node_id):
     else:
         train_datasets = [build_dataset(config, 'train', node_id=node_id)]
 
-    train_data_loaders = [DataLoader(train_dataset, batch_size=config.batch_size, shuffle=False,
-                                     collate_fn=collate_fn) for train_dataset in train_datasets]
+    train_data_loaders = [DataLoader(train_dataset, batch_size=config.batch_size, shuffle=False, collate_fn=collate_fn) for train_dataset in train_datasets]
 
     # Create validation data loader
     val_dataset = build_dataset(config, 'val')
@@ -220,13 +221,13 @@ if __name__ == '__main__':
     os.environ['MASTER_ADDR'] = 'localhost'
     os.environ['MASTER_PORT'] = '9957'
 
-    NUM_CLIENTS = config.num_clients
-    model = build_model(config)  # TODO Should already be in CUDA
+    NUM_CLIENTS = config.fl_params.num_clients
+    model = build_model(config)
     params = get_parameters_from_model(model)
 
     # Create FedAvg strategy
     strategy = fl.server.strategy.FedAvg(
-        # fraction_fit=config.client_sampling_probability,  # Sample 100% of available clients for training
+        # fraction_fit=config.dp_params.client_sampling_probability,  # Sample 100% of available clients for training
         fraction_fit=0.33,  # Sample 100% of available clients for training
         fraction_evaluate=1,  # Sample 50% of available clients for evaluation
         min_fit_clients=NUM_CLIENTS,  # Never sample less than 10 clients for training
@@ -247,7 +248,7 @@ if __name__ == '__main__':
     fl.simulation.start_simulation(
         client_fn=client_fn,
         num_clients=NUM_CLIENTS,
-        config=fl.server.ServerConfig(num_rounds=config.num_rounds),
+        config=fl.server.ServerConfig(num_rounds=config.fl_params.num_rounds),
         strategy=strategy,
         client_resources=client_resources,
         ray_init_args={"local_mode": True}  # run in one process to avoid zombie ray processes
