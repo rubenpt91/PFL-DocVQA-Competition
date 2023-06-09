@@ -4,6 +4,7 @@ import os
 import random
 import warnings
 from collections import OrderedDict
+from communication.log_communication import log_communication
 
 import flwr as fl
 import numpy as np
@@ -18,10 +19,11 @@ from eval import evaluate
 from logger import Logger
 from metrics import Evaluator
 from utils import load_config, parse_args, seed_everything
-from utils_parallel import get_parameters, set_parameters, weighted_average
+from utils_parallel import get_parameters_from_model, set_parameters_model, weighted_average
+from collections import OrderedDict
 
 
-def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl_config):
+def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl_config, cid):
     """
     Trains and returns the updated weights.
     """
@@ -48,7 +50,7 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl
         # perform n provider iterations (each provider has their own dataloader in the non-private case)
         for iter in range(config.fl_params.iterations_per_fl_round):
             for batch_idx, batch in enumerate(tqdm(provider_dataloader)):
-                warnings.warn(str(batch))
+
                 gt_answers = batch['answers']
                 outputs, pred_answers, pred_answer_page, answer_conf = model.forward(batch, return_pred_answer=True)
                 loss = outputs.loss + outputs.ret_loss if hasattr(outputs, 'ret_loss') else outputs.loss
@@ -116,12 +118,15 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl
 
     logger.logger.log(log_dict, step=logger.current_epoch * logger.len_dataset + batch_idx)
 
+    if fl_config["log_path"] is not None:
+        log_communication(federated_round=fl_config["current_round"], sender=cid, receiver=-1, data=parameters, log_location=fl_config["log_path"])
+        
     # Send the weights to the server
     return upd_weights
 
 
 class FlowerClient(fl.client.NumPyClient):
-    def __init__(self, model, trainloader, valloader, optimizer, lr_scheduler, evaluator, logger, config):
+    def __init__(self, model, trainloader, valloader, optimizer, lr_scheduler, evaluator, logger, config, cid):
         self.model = model
         self.trainloader = trainloader
         self.valloader = valloader
@@ -131,17 +136,23 @@ class FlowerClient(fl.client.NumPyClient):
         self.logger = logger
         self.logger.log_model_parameters(self.model)
         self.config = config
-
-    def get_parameters(self, config):
-        return get_parameters(self.model)
+        self.cid = cid
 
     def fit(self, parameters, config):
-        set_parameters(self.model, parameters)
-        updated_weigths = fl_train(self.trainloader, self.model, self.optimizer, self.lr_scheduler, self.evaluator, self.logger, config)
+        self.set_parameters(self.model, parameters, config)
+        updated_weigths = fl_train(self.trainloader, self.model, self.optimizer, self.lr_scheduler, self.evaluator, self.logger, config, self.cid)
         return updated_weigths, 1, {}  # TODO 1 ==> Number of selected clients.
 
+    def set_parameters(self, model, parameters, config):
+        params_dict = zip(model.model.state_dict().keys(), parameters)
+        state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
+        if config["log_path"] is not None:
+            log_communication(federated_round=config["current_round"], sender=-1, receiver=self.cid, data=parameters, log_location=config["log_path"])
+            
+        model.model.load_state_dict(state_dict, strict=True)
+
     def evaluate(self, parameters, config):
-        set_parameters(self.model, parameters)
+        set_parameters_model(self.model, parameters)
         accuracy, anls, ret_prec, _, _ = evaluate(self.valloader, self.model, self.evaluator, config)  # data_loader, model, evaluator, **kwargs
         is_updated = self.evaluator.update_global_metrics(accuracy, anls, 0)
         self.logger.log_val_metrics(accuracy, anls, ret_prec, update_best=is_updated)
@@ -173,15 +184,30 @@ def client_fn(client_id):
 
     evaluator = Evaluator(case_sensitive=False)
     logger = Logger(config=config)
-    return FlowerClient(model, train_data_loaders, val_data_loader, optimizer, lr_scheduler, evaluator, logger, config)
+    return FlowerClient(model, train_data_loaders, val_data_loader, optimizer, lr_scheduler, evaluator, logger, config, client_id)
 
 
-def fit_config(server_round: int):
-    """Return training configuration dict for each round."""
+def get_on_fit_config_fn(log_path):
+    """Return a function which returns training configurations."""
+
+    def fit_config(server_round: int):
+        """Return training configuration dict for each round."""
+        config = {
+            "batch_size": 32,
+            "current_round": server_round,
+            "local_epochs": 2,
+            "log_path": log_path
+        }
+        return config
+
+    return fit_config
+
+
+def evaluate_config(server_round: int):
+    """Return evaluate configuration dict for each round."""
     config = {
-        "batch_size": 32,
         "current_round": server_round,
-        "local_epochs": 2,
+        "log_path": None,
     }
     return config
 
@@ -197,7 +223,7 @@ if __name__ == '__main__':
 
     NUM_CLIENTS = config.fl_params.num_clients
     model = build_model(config)
-    params = get_parameters(model)
+    params = get_parameters_from_model(model)
 
     # Create FedAvg strategy
     strategy = fl.server.strategy.FedAvg(
@@ -209,7 +235,8 @@ if __name__ == '__main__':
         min_available_clients=NUM_CLIENTS,  # Wait until all 10 clients are available
         evaluate_metrics_aggregation_fn=weighted_average,  # <-- pass the metric aggregation function
         initial_parameters=fl.common.ndarrays_to_parameters(params),
-        on_fit_config_fn=fit_config
+        on_fit_config_fn=get_on_fit_config_fn(config.log_path),
+        on_evaluate_config_fn=evaluate_config,
     )
 
     # Specify client resources if you need GPU (defaults to 1 CPU and 0 GPU)
