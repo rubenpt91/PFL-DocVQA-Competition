@@ -1,4 +1,5 @@
 save_dir: save/
+log_path: save/comms/communication_log2.csv
 model_name: T5
 # model_weights: t5-base
 # model_weights: weights/t5_oracle_mp-docvqa__best.ckpt
@@ -6,7 +7,6 @@ model_weights: rubentito/t5-base-mpdocvqa
 # model_weights: rubentito/t5-base-docile-elsa
 device: cuda
 data_parallel: False
-log_path: communication_log2.csv
 
 training_parameters:
   lr: 2e-4  # 2e-4
