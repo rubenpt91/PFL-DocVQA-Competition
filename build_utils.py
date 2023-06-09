@@ -9,6 +9,10 @@ def build_optimizer(model, length_train_loader, config):
     optimizer_class = getattr(transformers, 'AdamW')
     optimizer = optimizer_class(model.model.parameters(), lr=float(config.lr))
     num_training_steps = config.train_epochs * length_train_loader
+
+    if config.flower and config.flower and config.fl_params.num_rounds:
+        num_training_steps = num_training_steps * config.fl_params.num_rounds * config.fl_params.iterations_per_fl_round
+
     lr_scheduler = get_scheduler(
         name="linear", optimizer=optimizer, num_warmup_steps=config.warmup_iterations, num_training_steps=num_training_steps
     )
