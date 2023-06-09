@@ -85,7 +85,7 @@ def main_eval(config, local_rank=None):
     start_time = time.time()
 
     if config.distributed:
-        config.global_rank = config.node_id * config.num_gpus + local_rank
+        config.global_rank = config.client_id * config.num_gpus + local_rank
 
         # Create distributed process group.
         torch.distributed.init_process_group(
@@ -165,7 +165,7 @@ class FlowerClient(fl.client.NumPyClient):
         return float(0), len(self.valloader), {"accuracy": float(total_accuracies), "anls": total_anls}   # First parameter is loss.
 
 
-def client_fn(node_id):
+def client_fn(client_id):
     """Create a Flower client representing a single organization."""
     model = build_model(config)
     dataset = build_dataset(config, 'test')

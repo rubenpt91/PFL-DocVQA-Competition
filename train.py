@@ -48,6 +48,7 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, fl
         # perform n provider iterations (each provider has their own dataloader in the non-private case)
         for iter in range(config.fl_params.iterations_per_fl_round):
             for batch_idx, batch in enumerate(tqdm(provider_dataloader)):
+                warnings.warn(str(batch))
                 gt_answers = batch['answers']
                 outputs, pred_answers, pred_answer_page, answer_conf = model.forward(batch, return_pred_answer=True)
                 loss = outputs.loss + outputs.ret_loss if hasattr(outputs, 'ret_loss') else outputs.loss
@@ -148,18 +149,19 @@ class FlowerClient(fl.client.NumPyClient):
         return float(0), len(self.valloader), {"accuracy": float(accuracy), "anls": anls}
 
 
-def client_fn(node_id):
+def client_fn(client_id):
     """Create a Flower client representing a single organization."""
-    # Pick a subset of providers
-    provider_to_doc = json.load(open(config.provider_docs, 'r'))
-    provider_to_doc = provider_to_doc["node_" + node_id]
-    providers = random.sample(list(provider_to_doc.keys()), k=config.dp_params.providers_per_fl_round)  # 50
-
     # Create a list of train data loaders with one dataloader per provider
+
     if config.use_dp:
-        train_datasets = [build_provider_dataset(config, 'train', provider_to_doc, provider, node_id) for provider in providers]
+        # Pick a subset of providers
+        provider_to_doc = json.load(open(config.provider_docs, 'r'))
+        provider_to_doc = provider_to_doc["client_" + client_id]
+        providers = random.sample(list(provider_to_doc.keys()), k=config.dp_params.providers_per_fl_round)  # 50
+        train_datasets = [build_provider_dataset(config, 'train', provider_to_doc, provider, client_id) for provider in providers]
+        
     else:
-        train_datasets = [build_dataset(config, 'train', node_id=node_id)]
+        train_datasets = [build_dataset(config, 'train', client_id=client_id)]
 
     train_data_loaders = [DataLoader(train_dataset, batch_size=config.batch_size, shuffle=False, collate_fn=collate_fn) for train_dataset in train_datasets]
 
