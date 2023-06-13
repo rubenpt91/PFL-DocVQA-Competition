@@ -1,4 +1,5 @@
 save_dir: save/
+log_path: save/comms/communication_log2.csv
 model_name: T5
 # model_weights: t5-base
 # model_weights: weights/t5_oracle_mp-docvqa__best.ckpt
@@ -12,3 +13,15 @@ training_parameters:
   batch_size: 10
   train_epochs: 10
   warmup_iterations: 1000
+
+fl_parameters:
+  num_clients: 1
+  num_rounds: 100
+  iterations_per_fl_round: 2
+
+dp_parameters:
+  sensitivity: 0.5
+  noise_multiplier: 4.2
+  providers_per_fl_round: 5
+  client_sampling_probability: 0.1960
+

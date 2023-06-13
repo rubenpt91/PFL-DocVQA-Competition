@@ -9,6 +9,10 @@ def build_optimizer(model, length_train_loader, config):
     optimizer_class = getattr(transformers, 'AdamW')
     optimizer = optimizer_class(model.model.parameters(), lr=float(config.lr))
     num_training_steps = config.train_epochs * length_train_loader
+
+    if config.flower and config.flower and config.fl_params.num_rounds:
+        num_training_steps = num_training_steps * config.fl_params.num_rounds * config.fl_params.iterations_per_fl_round
+
     lr_scheduler = get_scheduler(
         name="linear", optimizer=optimizer, num_warmup_steps=config.warmup_iterations, num_training_steps=num_training_steps
     )
@@ -37,7 +41,7 @@ def build_model(config):
     return model
 
 
-def build_dataset(config, split, node_id=None):
+def build_dataset(config, split, client_id=None):
 
     # Specify special params for data processing depending on the model used.
     dataset_kwargs = {}
@@ -48,8 +52,8 @@ def build_dataset(config, split, node_id=None):
     if config.model_name.lower() in ['vt5']:
         dataset_kwargs['use_images'] = True
 
-    if node_id is not None:
-        dataset_kwargs['node_id'] = node_id
+    if client_id is not None:
+        dataset_kwargs['client_id'] = client_id
 
     # Build dataset
     if config.dataset_name == 'DocILE-ELSA':
@@ -62,7 +66,7 @@ def build_dataset(config, split, node_id=None):
     return dataset
 
 
-def build_provider_dataset(config, split, provider_to_doc, provider, node_id=None):
+def build_provider_dataset(config, split, provider_to_doc, provider, client_id=None):
 
     # Specify special params for data processing depending on the model used.
     dataset_kwargs = {}
@@ -73,8 +77,8 @@ def build_provider_dataset(config, split, provider_to_doc, provider, node_id=Non
     if config.model_name.lower() in ['vt5']:
         dataset_kwargs['use_images'] = True
 
-    if node_id:
-        dataset_kwargs['node_id'] = node_id
+    if client_id:
+        dataset_kwargs['client_id'] = client_id
 
 
     # Build dataset

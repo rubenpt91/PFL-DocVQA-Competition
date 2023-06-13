@@ -2,11 +2,11 @@ import torch
 from collections import OrderedDict
 
 
-def get_parameters(model):
+def get_parameters_from_model(model):
     return [val.cpu().numpy() for _, val in model.model.state_dict().items()]
 
 
-def set_parameters(model, parameters):
+def set_parameters_model(model, parameters):
     params_dict = zip(model.model.state_dict().keys(), parameters)
     state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
     model.model.load_state_dict(state_dict, strict=True)
