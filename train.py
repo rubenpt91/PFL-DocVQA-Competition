@@ -38,7 +38,7 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, cl
         raise ValueError("Non private training should only use one data loader.")
 
     warnings.warn("LEN: " + str(len(data_loaders)))
-    tqdm_multiplier = len(data_loaders) * config.fl_params.iterations_per_fl_round
+    tqdm_multiplier = len(data_loaders) * config.fl_parameters.iterations_per_fl_round
     for provider_dataloader in data_loaders:
         # total_loss = 0
 
@@ -48,7 +48,7 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, cl
         model.model.train()
 
         # perform n provider iterations (each provider has their own dataloader in the non-private case)
-        for iter in range(config.fl_params.iterations_per_fl_round):
+        for iter in range(config.fl_parameters.iterations_per_fl_round):
             for batch_idx, batch in enumerate(tqdm(provider_dataloader)):
 
                 gt_answers = batch['answers']
@@ -231,7 +231,7 @@ if __name__ == '__main__':
     os.environ['MASTER_ADDR'] = 'localhost'
     os.environ['MASTER_PORT'] = '9957'
 
-    NUM_CLIENTS = config.fl_params.num_clients
+    NUM_CLIENTS = config.fl_parameters["num_clients"]
     model = build_model(config)
     params = get_parameters_from_model(model)
 
@@ -262,7 +262,7 @@ if __name__ == '__main__':
     fl.simulation.start_simulation(
         client_fn=client_fn,
         num_clients=NUM_CLIENTS,
-        config=fl.server.ServerConfig(num_rounds=config.fl_params.num_rounds),
+        config=fl.server.ServerConfig(num_rounds=config.fl_parameters["num_rounds"]),
         strategy=strategy,
         client_resources=client_resources,
         ray_init_args={"local_mode": True}  # run in one process to avoid zombie ray processes
