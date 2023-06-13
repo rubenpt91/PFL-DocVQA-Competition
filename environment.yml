@@ -6,13 +6,15 @@ channels:
   - conda-forge
 
 dependencies:
-  - wandb
-  - python
-  - pytorch::pytorch=1.10
-  - pytorch::torchvision
-  - pytorch::torchaudio
-  - cudatoolkit=11.0
-  - sentencepiece
-  - huggingface::transformers=4.26.1
-  - editdistance
-  - flwr=1.4.0
+  - wandb=0.12.15
+  - python=3.10.2
+  - pytorch::pytorch=1.11.0
+  - pytorch::torchvision=0.12.0
+  - pytorch::torchaudio=0.11.0
+  - cudatoolkit=11.3
+  - pip=22.0.4
+  - pip:
+    - sentencepiece==0.1.96
+    - transformers==4.27.2
+    - editdistance==0.6.0
+    - flwr==1.4.0
