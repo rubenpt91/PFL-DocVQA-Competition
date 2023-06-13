@@ -38,7 +38,7 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, cl
         raise ValueError("Non private training should only use one data loader.")
 
     warnings.warn("LEN: " + str(len(data_loaders)))
-    tqdm_multiplier = len(data_loaders) * config.fl_parameters.iterations_per_fl_round
+    tqdm_multiplier = len(data_loaders) * config.fl_parameters["iterations_per_fl_round"]
     for provider_dataloader in data_loaders:
         # total_loss = 0
 
@@ -48,7 +48,7 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, cl
         model.model.train()
 
         # perform n provider iterations (each provider has their own dataloader in the non-private case)
-        for iter in range(config.fl_parameters.iterations_per_fl_round):
+        for iter in range(config.fl_parameters["iterations_per_fl_round"]):
             for batch_idx, batch in enumerate(tqdm(provider_dataloader)):
 
                 gt_answers = batch['answers']
