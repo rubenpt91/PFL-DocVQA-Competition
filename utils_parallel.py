@@ -24,8 +24,6 @@ def weighted_average(metrics):
 
 import warnings
 def weighted_average(metrics_dict):
-    warnings.warn('\n' + str(metrics_dict) + '\n')
-
     metrics = list(metrics_dict[0][1].keys())
     aggregated_metrics_dict = {}
     dataset_length = sum([num_samples for num_samples, _ in metrics_dict])
@@ -33,5 +31,5 @@ def weighted_average(metrics_dict):
         aggregated_metrics_dict[metric] = sum(
             [m[metric] * num_examples / dataset_length for num_examples, m in metrics_dict])
 
-    warnings.warn('\n' + str(metrics_dict) + '\n')
+    warnings.warn('\n' + str(metrics_dict) + '\n' + str(aggregated_metrics_dict) + '\n')
     return aggregated_metrics_dict

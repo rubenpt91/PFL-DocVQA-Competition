@@ -37,8 +37,9 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, cl
     if not config.use_dp and len(data_loaders) > 1:
         raise ValueError("Non private training should only use one data loader.")
 
-    warnings.warn("LEN: " + str(len(data_loaders)))
     tqdm_multiplier = len(data_loaders) * config.fl_params.iterations_per_fl_round
+    warnings.warn("LEN: " + str(len(data_loaders)) + "  \t  TQDM Mult: " + str(tqdm_multiplier))
+
     for provider_dataloader in data_loaders:
         # total_loss = 0
 
@@ -58,7 +59,7 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, cl
                 # total_loss += loss.item() / len(batch['question_id'])
                 loss.backward()
                 optimizer.step()
-                lr_scheduler.step()
+                # lr_scheduler.step()
                 optimizer.zero_grad()
 
                 metric = evaluator.get_metrics(gt_answers, pred_answers)
@@ -177,13 +178,14 @@ def client_fn(client_id):
         train_datasets = [build_dataset(config, 'train', client_id=client_id)]
 
     train_data_loaders = [DataLoader(train_dataset, batch_size=config.batch_size, shuffle=False, collate_fn=collate_fn) for train_dataset in train_datasets]
-    total_training_steps = [len(data_loader) for data_loader in train_data_loaders]
+    total_training_steps = sum([len(data_loader) for data_loader in train_data_loaders])
 
     # Create validation data loader
     val_dataset = build_dataset(config, 'val')
     val_data_loader = DataLoader(val_dataset, batch_size=config.batch_size, shuffle=False, collate_fn=collate_fn)
 
-    optimizer, lr_scheduler = build_optimizer(model, length_train_loader=len(total_training_steps), config=config)
+    # lr_scheduler disabled due to malfunction in FL setup.
+    optimizer, lr_scheduler = build_optimizer(model, length_train_loader=total_training_steps, config=config)
 
     evaluator = Evaluator(case_sensitive=False)
     logger = Logger(config=config)
@@ -235,7 +237,7 @@ if __name__ == '__main__':
     model = build_model(config)
     params = get_parameters_from_model(model)
 
-    # Create FedAvg strategyq
+    # Create FedAvg strategy
     strategy = fl.server.strategy.FedAvg(
         # fraction_fit=config.dp_params.client_sampling_probability,  # Sample 100% of available clients for training
         fraction_fit=0.33,  # Sample 100% of available clients for training

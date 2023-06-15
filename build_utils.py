@@ -13,11 +13,13 @@ def build_optimizer(model, length_train_loader, config):
     if config.flower and config.flower and config.fl_params.num_rounds:
         num_training_steps = num_training_steps * config.fl_params.num_rounds * config.fl_params.iterations_per_fl_round
 
-    lr_scheduler = get_scheduler(
-        name="linear", optimizer=optimizer, num_warmup_steps=config.warmup_iterations, num_training_steps=num_training_steps
-    )
+    # lr scheduler disabled due to malfunctioning in FL setup.
+    # lr_scheduler = get_scheduler(
+    #     name="linear", optimizer=optimizer, num_warmup_steps=config.warmup_iterations, num_training_steps=num_training_steps
+    # )
 
-    return optimizer, lr_scheduler
+    # return optimizer, lr_scheduler
+    return optimizer, None
 
 
 def build_model(config):
