@@ -10,6 +10,7 @@ class Logger:
 
         experiment_date = datetime.datetime.now().strftime('%Y.%m.%d_%H.%M.%S')
         self.experiment_name = "{:s}__{:}".format(config.model_name, experiment_date)
+        self.comms_log_file = os.path.join(self.log_folder, "{:}.csv".format(self.experiment_name))
 
         machine_dict = {'cvc117': 'Local', 'cudahpc16': 'DAG', 'cudahpc25': 'DAG-A40'}
         machine = machine_dict.get(socket.gethostname(), socket.gethostname())

@@ -121,8 +121,9 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, cl
 
     # if fl_config["log_path"] is not None:
     if config.flower:
-        log_communication(federated_round=fl_config["current_round"], sender=client_id, receiver=-1, data=parameters, log_location=fl_config["log_path"])
-        
+        # log_communication(federated_round=fl_config["current_round"], sender=client_id, receiver=-1, data=parameters, log_location=fl_config["log_path"])
+        log_communication(federated_round=fl_config["current_round"], sender=client_id, receiver=-1, data=parameters, log_location=logger.comms_log_file)
+
     # Send the weights to the server
     return upd_weights
 
@@ -149,8 +150,9 @@ class FlowerClient(fl.client.NumPyClient):
         params_dict = zip(model.model.state_dict().keys(), parameters)
         state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
         if config["log_path"] is not None:
-            log_communication(federated_round=config["current_round"], sender=-1, receiver=self.client_id, data=parameters, log_location=config["log_path"])
-            
+            # log_communication(federated_round=config["current_round"], sender=-1, receiver=self.client_id, data=parameters, log_location=config["log_path"])
+            log_communication(federated_round=config["current_round"], sender=-1, receiver=self.client_id, data=parameters, log_location=self.logger.comms_log_file)
+
         model.model.load_state_dict(state_dict, strict=True)
 
     # The `evaluate` function will be by Flower called after every round

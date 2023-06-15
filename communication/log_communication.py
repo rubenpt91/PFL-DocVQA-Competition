@@ -18,6 +18,8 @@ def log_communication(federated_round: int, sender: int, receiver: int, data: li
     receiver : int
         The ID of the receiver of the data. 
         The server has the ID = -1 and the clients have IDs >= 0.
+    log_location : str
+        Path to the communications log pathfile.
 
     Raises
     ------

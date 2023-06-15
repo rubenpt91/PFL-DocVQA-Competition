@@ -1,6 +1,7 @@
 from communication.log_communication import log_communication
 import pytest
 
+
 def test_invalid_values():
     # invalid federated round
     with pytest.raises(ValueError):
