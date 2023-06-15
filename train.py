@@ -14,7 +14,7 @@ from tqdm import tqdm
 
 from build_utils import (build_dataset, build_model, build_optimizer, build_provider_dataset)
 from datasets.DocILE_ELSA import collate_fn
-from differential_privacy.dp_utils import (add_dp_noise, clip_parameters, flatten_params, get_shape, reconstruct)
+from differential_privacy.dp_utils import (add_dp_noise, clip_parameters, flatten_params, get_shape, reconstruct_shape)
 from eval import evaluate  # fl_centralized_evaluation
 from logger import Logger
 from metrics import Evaluator
@@ -111,7 +111,7 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, cl
         agg_update = torch.div(agg_update, len(data_loaders))
 
         # Add the noisy update to the original model
-        agg_update = reconstruct(agg_update, shapes)
+        agg_update = reconstruct_shape(agg_update, shapes)
     else:
         agg_update = new_update
 
