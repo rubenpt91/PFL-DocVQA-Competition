@@ -23,10 +23,11 @@ class Logger:
         page_tokens = getattr(config, 'page_tokens', None)
         tags = [config.model_name, dataset, machine]
 
-        log_config = {'Model': config.model_name, 'Weights': config.model_weights, 'Dataset': dataset,
-                  'Page retrieval': page_retrieval, 'Visual Encoder': visual_encoder,
-                  'Batch size': config.batch_size, 'Max. Seq. Length': getattr(config, 'max_sequence_length', '-'),
-                  'lr': config.lr, 'seed': config.seed}
+        log_config = {
+            'Model': config.model_name, 'Weights': config.model_weights, 'Dataset': dataset,  # 'Page retrieval': page_retrieval,
+            'Visual Encoder': visual_encoder, 'Batch size': config.batch_size,
+            'Max. Seq. Length': getattr(config, 'max_sequence_length', '-'), 'lr': config.lr, 'seed': config.seed,
+        }
 
         if document_pages:
             log_config['Max Pages'] = document_pages
