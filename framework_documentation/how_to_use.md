@@ -11,24 +11,35 @@
       3. [Training parameters](#training-parameters)
 4. [Visualization](#attention-visualization)
 
+## Donwload
+
+```bash
+$ git clone git@github.com:rubenpt91/PFL-DocVQA-Competition.git
+```
+
 ## Set-up environment
 
-To start all the dependencies you only need to create a new conda environment with the provided yml file: <br>
+To install all the dependencies you only need to create a new conda environment from the provided environment.yml file: <br>
 
 ```bash
 $ conda env create -f environment.yml
-$ conda activate mp_docvqa
+$ conda activate pfl_docvqa
 ```
+
+## Download the dataset
+Download the dataset from the [ELSA Benchmarks Platform](https://elsa.cvc.uab.es/?ch=2&com=downloads) \
+Change the paths of the dataset config ```configs/datasets/PFL-DocVQA.yml``` to match the dataset directory.
 
 ## Train and evaluate
 
 To use the framework you only need to call the `train.py` or `eval.py` scripts with the dataset and model you want to use. For example:
 
 ```python
-python train.py --dataset MP-DocVQA --model HiVT5
+python train.py --dataset PFL-DocVQA --model VT5
 ```
 
-The name of the dataset and the model **must** match the name of the configuration under the `configs/dataset` and `configs/models`. This allows to have different configs for the same dataset or model. For example in my case, I have `MP-DocVQA_local.yml`, and `MP-DocVQA_cluster.yml`. Depending on where to I run the script I use one or the other, where I specify the correct dataset path in each environment.
+The name of the dataset and the model **must** match the name of the configuration under the `configs/dataset` and `configs/models`. This allows to have different configs for the same dataset or model.
+For instance, you can have `PFL-DocVQA_local.yml`, and `PFL-DocVQA_cluster.yml`. With different hyperparameters such as batch size, or dataset paths.
 
 ## Configuration files and input arguments
 
