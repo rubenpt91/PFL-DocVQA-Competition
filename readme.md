@@ -20,7 +20,7 @@ If you want to download the dataset, you can do so in the [ELSA Benchmarks Compe
 
 In addition, if you need the images. We will need to download the original dataset from the [DocILE Challenge](https://rrc.cvc.uab.es/?ch=26downloads).
 
-## DocILE-ELSA models weights
+## PFL-DocVQA models weights
 
 | Model 		   | Weights HF name								                                                                   | Parameters 	|
 |:-----------|:------------------------------------------------------------------------------------------|:-------------:|
