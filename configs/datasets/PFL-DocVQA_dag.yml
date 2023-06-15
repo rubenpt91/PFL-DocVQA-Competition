@@ -1,4 +1,4 @@
-dataset_name: DocILE-ELSA
+dataset_name: PFL-DocVQA
 imdb_dir: /data/shared/DocILE/elsa_imdb
 # imdb_dir: /data/users/rperez/DocILE/elsa_imdb
 images_dir: /data/shared/DocILE/images

@@ -2,7 +2,7 @@ from torch.utils.data import DataLoader
 
 from build_utils import build_dataset, build_optimizer
 from checkpoint import save_model
-from datasets.DocILE_ELSA import collate_fn
+from datasets.PFL_DocVQA import collate_fn
 from eval import evaluate
 from logger import Logger
 from metrics import Evaluator

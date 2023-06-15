@@ -17,7 +17,7 @@ training_parameters:
 fl_parameters:
   num_clients: 1
   num_rounds: 100
-  iterations_per_fl_round: 2
+  iterations_per_fl_round: 1
 
 dp_parameters:
   sensitivity: 0.5

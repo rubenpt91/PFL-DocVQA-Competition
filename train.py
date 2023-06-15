@@ -10,10 +10,10 @@ import flwr as fl
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
-from tqdm import tqdm
+from datasets.PFL_DocVQA import collate_fn
 
+from tqdm import tqdm
 from build_utils import (build_dataset, build_model, build_optimizer, build_provider_dataset)
-from datasets.DocILE_ELSA import collate_fn
 from differential_privacy.dp_utils import (add_dp_noise, clip_parameters, flatten_params, get_shape, reconstruct_shape)
 from eval import evaluate  # fl_centralized_evaluation
 from logger import Logger

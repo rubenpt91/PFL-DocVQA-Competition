@@ -58,9 +58,9 @@ def build_dataset(config, split, client_id=None):
         dataset_kwargs['client_id'] = client_id
 
     # Build dataset
-    if config.dataset_name == 'DocILE-ELSA':
-        from datasets.DocILE_ELSA import DocILE_ELSA
-        dataset = DocILE_ELSA(config.imdb_dir, config.images_dir, split, dataset_kwargs)
+    if config.dataset_name == 'PFL-DocVQA':
+        from datasets.PFL_DocVQA import PFL_DocVQA
+        dataset = PFL_DocVQA(config.imdb_dir, config.images_dir, split, dataset_kwargs)
 
     else:
         raise ValueError
@@ -86,9 +86,9 @@ def build_provider_dataset(config, split, provider_to_doc, provider, client_id=N
     # Build dataset
 
     indexes = provider_to_doc[provider]
-    if config.dataset_name == 'DocILE-ELSA':
-        from datasets.DocILE_ELSA import DocILE_ELSA
-        dataset = DocILE_ELSA(config.imdb_dir, config.images_dir, split, dataset_kwargs, indexes)
+    if config.dataset_name == 'PFL-DocVQA':
+        from datasets.PFL_DocVQA import PFL_DocVQA
+        dataset = PFL_DocVQA(config.imdb_dir, config.images_dir, split, dataset_kwargs, indexes)
 
     else:
         raise ValueError

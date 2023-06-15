@@ -4,7 +4,7 @@ from tqdm import tqdm
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
-from datasets.DocILE_ELSA import collate_fn
+from datasets.PFL_DocVQA import collate_fn
 
 from logger import Logger
 from metrics import Evaluator

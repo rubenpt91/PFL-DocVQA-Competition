@@ -7,7 +7,7 @@ from torch.utils.data import Dataset
 import numpy as np
 
 
-class DocILE_ELSA(Dataset):
+class PFL_DocVQA(Dataset):
 
     def __init__(self, imbd_dir, images_dir, split, kwargs, indexes=None):
 
@@ -27,7 +27,6 @@ class DocILE_ELSA(Dataset):
 
         self.use_images = kwargs.get('use_images', False)
         self.get_raw_ocr_data = kwargs.get('get_raw_ocr_data', False)
-
 
     def __len__(self):
         return len(self.imdb)  #  min(20, len(self.imdb))
