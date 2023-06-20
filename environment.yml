@@ -1,4 +1,4 @@
-name: pfl_docvqa_x
+name: pfl_docvqa
 channels:
   - pytorch
   - nvidia
