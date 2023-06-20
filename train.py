@@ -37,8 +37,10 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, cl
     if not config.use_dp and len(data_loaders) > 1:
         raise ValueError("Non private training should only use one data loader.")
 
-    tqdm_multiplier = len(data_loaders) * config.fl_params.iterations_per_fl_round
-    warnings.warn("LEN: " + str(len(data_loaders)) + "  \t  TQDM Mult: " + str(tqdm_multiplier))
+    total_training_steps = sum([len(data_loader) for data_loader in data_loaders]) * config.fl_params.iterations_per_fl_round
+    pbar = tqdm(total=total_training_steps)
+
+    warnings.warn("LEN: " + str(len(data_loaders)) + "  \t  TQDM Total steps: " + str(total_training_steps))
 
     for provider_dataloader in data_loaders:
         # total_loss = 0
@@ -50,7 +52,7 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, cl
 
         # perform n provider iterations (each provider has their own dataloader in the non-private case)
         for iter in range(config.fl_params.iterations_per_fl_round):
-            for batch_idx, batch in enumerate(tqdm(provider_dataloader)):
+            for batch_idx, batch in enumerate(provider_dataloader):
 
                 gt_answers = batch['answers']
                 outputs, pred_answers, pred_answer_page, answer_conf = model.forward(batch, return_pred_answer=True)
@@ -84,6 +86,8 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, cl
 
                 logger.logger.log(log_dict)
 
+                pbar.update()
+
         # After all the iterations:
         # Get the update
         new_update = [w - w_0 for w, w_0 in zip(list(model.model.state_dict().values()), parameters)]  # Get model update
@@ -102,12 +106,13 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, cl
             else:
                 agg_update += new_update
 
+    pbar.set_description('asdfhskajdbfska asbf askhbf sbadfjabhf sbadjk bdb hsadb dsahb jf')
     # Handle DP after all updates are done
     if config.use_dp:
         # Add the noise
         agg_update = add_dp_noise(agg_update, noise_multiplier=config.dp_params.noise_multiplier, sensitivity=config.dp_params.sensitivity)
 
-        # Divide the noisy aggregated update by the number of providers (100)
+        # Divide the noisy aggregated update by the number of providers (Average update).
         agg_update = torch.div(agg_update, len(data_loaders))
 
         # Add the noisy update to the original model
@@ -116,6 +121,8 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, cl
         agg_update = new_update
 
     upd_weights = [torch.add(agg_upd, w_0).cpu() for agg_upd, w_0 in zip(agg_update, copy.deepcopy(parameters))]
+
+    pbar.close()
 
     logger.logger.log(log_dict, step=logger.current_epoch * logger.len_dataset + batch_idx)
 
