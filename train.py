@@ -106,7 +106,6 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, cl
             else:
                 agg_update += new_update
 
-    pbar.set_description('asdfhskajdbfska asbf askhbf sbadfjabhf sbadjk bdb hsadb dsahb jf')
     # Handle DP after all updates are done
     if config.use_dp:
         # Add the noise
