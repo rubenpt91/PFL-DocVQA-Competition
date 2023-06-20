@@ -7,13 +7,23 @@ max_source_length: 512
 device: cuda
 data_parallel: False
 
+visual_module:
+  model: 'dit'  # 'vit' / 'dit'
+  model_weights: 'microsoft/dit-base-finetuned-rvlcdip'  # 'google/vit-base-patch16-224-in21k' / 'microsoft/dit-base-finetuned-rvlcdip'
+
 training_parameters:
   lr: 2e-4  # 2e-4
   batch_size: 2
   train_epochs: 10
   warmup_iterations: 1000
 
-visual_module:
-  model: 'dit'  # 'vit' / 'dit'
-  model_weights: 'microsoft/dit-base-finetuned-rvlcdip'  # 'google/vit-base-patch16-224-in21k' / 'microsoft/dit-base-finetuned-rvlcdip'
+fl_parameters:
+  num_clients: 2
+  num_rounds: 100
+  iterations_per_fl_round: 2
 
+dp_parameters:
+  sensitivity: 0.5  # [0.5, 1.0, 1.5, 2.0, 2.5, 3.0]
+  noise_multiplier: 1.182
+  providers_per_fl_round: 50
+  client_sampling_probability: 0.1960

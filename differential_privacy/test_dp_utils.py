@@ -29,6 +29,7 @@ def test_flatten_reconstruct_params():
     assert np.all([torch.equal(x, y) for x, y in zip(tensor_list, reconstructed)])
     assert np.all([np.equal(x.shape, shape) for x, shape in zip(tensor_list, test_shapes)])
 
+
 def test_clip_parameters():
     test_shapes = [(i*10) for i in range(10)]
     clipping_norms = np.linspace(0, 1, num=10)

@@ -35,7 +35,7 @@ def log_communication(federated_round: int, sender: int, receiver: int, data: li
     _save_row_to_csv([federated_round, sender, receiver, amount_of_bytes], path=log_location)    
 
 
-def _save_row_to_csv(row : list, path : str):
+def _save_row_to_csv(row: list, path: str):
     """
     Save row seperated by commas to the specified path.
 
