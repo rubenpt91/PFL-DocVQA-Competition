@@ -232,7 +232,6 @@ if __name__ == '__main__':
     os.environ['MASTER_ADDR'] = 'localhost'
     os.environ['MASTER_PORT'] = '9957'
 
-    # NUM_CLIENTS = config.fl_params.num_clients
     model = build_model(config)
     params = get_parameters_from_model(model)
 
