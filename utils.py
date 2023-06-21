@@ -28,7 +28,7 @@ def parse_args():
 
     # Flower
     parser.add_argument('--flower', action='store_true', default=False, help='Use FL Flower.')
-    parser.add_argument('--num_clients', type=int, help='Number of clients for FL.')
+    parser.add_argument('--sample_clients', type=int, help='Number of sampled clients during FL.')
     parser.add_argument('--num_rounds', type=int, help='Number of FL rounds.')
     parser.add_argument('--client_sampling_probability', type=float, help='.')  # (Number of selected clients / total number of clients)
     parser.add_argument('--iterations_per_fl_round', type=int, help='Number of iterations per provider during each FL round.')
@@ -112,9 +112,8 @@ def check_config(config):
     elif page_retrieval == 'none' and config.dataset_name not in ['SP-DocVQA', 'PFL-DocVQA']:
         print("Page retrieval can't be none for dataset '{:s}'. This is intended only for single page datasets. Please specify in the method config file the 'page_retrieval' setup to one of the following: [oracle, concat, logits, custom] ".format(config.dataset_name))
 
-    if not config.flower:
-        if 'num_clients' in config and config.num_clients > 1:
-            raise ValueError("Number of clients '{:d}' but Flower framework is not activated. Please, indicate 'flower' in arguments if you want to use Federated Learning.".format(config.num_clients))
+    if config.flower:
+        assert config.fl_params.sample_clients <= config.fl_params.total_clients, "Number of sampled clients ({:d}) can't be greater than total number of clients ({:d})".format(config.fl_params.sample_clients, config.fl_params.total_clients)
 
     if 'save_dir' in config:
         if not config.save_dir.endswith('/'):

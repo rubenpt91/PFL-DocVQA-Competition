@@ -40,17 +40,15 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, cl
     total_training_steps = sum([len(data_loader) for data_loader in data_loaders]) * config.fl_params.iterations_per_fl_round
     pbar = tqdm(total=total_training_steps)
 
-    warnings.warn("LEN: " + str(len(data_loaders)) + "  \t  TQDM Total steps: " + str(total_training_steps))
-
+    # total_loss = 0
     for provider_dataloader in data_loaders:
-        # total_loss = 0
 
-        # set model weights to state of beginning of federated round
+        # Set model weights to state of beginning of federated round
         state_dict = OrderedDict({k: v for k, v in zip(param_keys, parameters)})
         model.model.load_state_dict(state_dict, strict=True)
         model.model.train()
 
-        # perform n provider iterations (each provider has their own dataloader in the non-private case)
+        # Perform N provider iterations (each provider has their own dataloader in the non-private case)
         for iter in range(config.fl_params.iterations_per_fl_round):
             for batch_idx, batch in enumerate(provider_dataloader):
 
@@ -242,7 +240,7 @@ if __name__ == '__main__':
     strategy = fl.server.strategy.FedAvg(
         # fraction_fit=config.dp_params.client_sampling_probability,  # Sample 100% of available clients for training
         fraction_fit=0.33,  # Sample 100% of available clients for training
-        fraction_evaluate=1,  # Sample 100% of available clients for evaluation
+        fraction_evaluate=config.fl_params.sample_clients,  # Sample N of available clients for evaluation
         min_fit_clients=config.fl_params.sample_clients,  # Never sample less than N clients for training
         min_evaluate_clients=config.fl_params.sample_clients,  # Never sample less than N clients for evaluation
         min_available_clients=config.fl_params.sample_clients,  # Wait until N clients are available
