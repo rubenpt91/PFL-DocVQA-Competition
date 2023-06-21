@@ -76,16 +76,7 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, cl
                     'lr': optimizer.param_groups[0]['lr']
                 }
 
-                if hasattr(outputs, 'ret_loss'):
-                    log_dict['Train/Batch retrieval loss'] = outputs.ret_loss.item()
-
-                if 'answer_page_idx' in batch and None not in batch['answer_page_idx']:
-                    ret_metric = evaluator.get_retrieval_metric(batch.get('answer_page_idx', None), pred_answer_page)
-                    batch_ret_prec = np.mean(ret_metric)
-                    log_dict['Train/Batch Ret. Prec.'] = batch_ret_prec
-
                 logger.logger.log(log_dict)
-
                 pbar.update()
 
         # After all the iterations:
@@ -164,9 +155,9 @@ class FlowerClient(fl.client.NumPyClient):
     # The `evaluate` function will be by Flower called after every round
     def evaluate(self, parameters, config):
         set_parameters_model(self.model, parameters)
-        accuracy, anls, ret_prec, _, _ = evaluate(self.valloader, self.model, self.evaluator, config)  # data_loader, model, evaluator, **kwargs
+        accuracy, anls, _, _ = evaluate(self.valloader, self.model, self.evaluator, config)  # data_loader, model, evaluator, **kwargs
         is_updated = self.evaluator.update_global_metrics(accuracy, anls, 0)
-        self.logger.log_val_metrics(accuracy, anls, ret_prec, update_best=is_updated)
+        self.logger.log_val_metrics(accuracy, anls, update_best=is_updated)
 
         return float(0), len(self.valloader), {"accuracy": float(accuracy), "anls": anls}
 
@@ -275,5 +266,5 @@ if __name__ == '__main__':
         config=fl.server.ServerConfig(num_rounds=config.fl_params.num_rounds),
         strategy=strategy,
         client_resources=client_resources,
-        ray_init_args={"local_mode": True}  # run in one process to avoid zombie ray processes
+        # ray_init_args={"local_mode": True}  # run in one process to avoid zombie ray processes
     )
