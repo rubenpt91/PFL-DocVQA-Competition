@@ -68,7 +68,7 @@ class Logger(metaclass=Singleton):
         self.logger = wb.init(project="PFL-DocVQA-Competition", name=self.experiment_name, dir=self.log_folder, tags=tags, config=log_config)
         self._print_config(log_config)
 
-        self.current_epoch = 0
+        self.current_epoch = 1
         self.len_dataset = 0
 
     def _print_config(self, config):
@@ -91,8 +91,7 @@ class Logger(metaclass=Singleton):
             total_params, trainable_params, trainable_params / total_params * 100))
 
     def log_val_metrics(self, accuracy, anls, update_best=False):
-
-        str_msg = "Epoch {:d}: Accuracy {:2.2f}     ANLS {:2.4f}".format(self.current_epoch, accuracy*100, anls)
+        str_msg = "FL Round {:d}: Accuracy {:2.2f}     ANLS {:2.4f}".format(self.current_epoch, accuracy*100, anls)
         self.logger.log({
             'Val/Epoch Accuracy': accuracy,
             'Val/Epoch ANLS': anls,

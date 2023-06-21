@@ -33,10 +33,11 @@ def train(model, config):
     config.return_pred_answers = False
 
     if getattr(config, 'eval_start', False):
-        logger.current_epoch = -1
+        logger.current_epoch = 0
         accuracy, anls, ret_prec, _, _ = evaluate(val_data_loader, model, evaluator, config)
-        is_updated = evaluator.update_global_metrics(accuracy, anls, -1)
+        is_updated = evaluator.update_global_metrics(accuracy, anls, 0)
         logger.log_val_metrics(accuracy, anls, ret_prec, update_best=is_updated)
+        logger.current_epoch += 1
 
     for epoch_ix in range(epochs):
         logger.current_epoch = epoch_ix
