@@ -24,12 +24,10 @@ def evaluate(data_loader, model, evaluator, config):
         scores_by_samples = {}
         total_accuracies = []
         total_anls = []
-        total_ret_prec = []
 
     else:
         total_accuracies = 0
         total_anls = 0
-        total_ret_prec = 0
 
     all_pred_answers = []
     model.model.eval()
@@ -38,21 +36,14 @@ def evaluate(data_loader, model, evaluator, config):
         bs = len(batch['question_id'])
         with torch.no_grad():
             outputs, pred_answers, pred_answer_page, answer_conf = model.forward(batch, return_pred_answer=True)
-            # print(pred_answers)
 
         metric = evaluator.get_metrics(batch['answers'], pred_answers, batch.get('answer_type', None))
-
-        if 'answer_page_idx' in batch and pred_answer_page is not None:
-            ret_metric = evaluator.get_retrieval_metric(batch['answer_page_idx'], pred_answer_page)
-        else:
-            ret_metric = [0 for _ in range(bs)]
 
         if return_scores_by_sample:
             for batch_idx in range(bs):
                 scores_by_samples[batch['question_id'][batch_idx]] = {
                     'accuracy': metric['accuracy'][batch_idx],
                     'anls': metric['anls'][batch_idx],
-                    'ret_prec': ret_metric[batch_idx],
                     'pred_answer': pred_answers[batch_idx],
                     'pred_answer_conf': answer_conf[batch_idx],
                     'pred_answer_page': pred_answer_page[batch_idx] if pred_answer_page is not None else None
@@ -61,12 +52,10 @@ def evaluate(data_loader, model, evaluator, config):
         if return_scores_by_sample:
             total_accuracies.extend(metric['accuracy'])
             total_anls.extend(metric['anls'])
-            total_ret_prec.extend(ret_metric)
 
         else:
             total_accuracies += sum(metric['accuracy'])
             total_anls += sum(metric['anls'])
-            total_ret_prec += sum(ret_metric)
 
         if return_answers:
             all_pred_answers.extend(pred_answers)
@@ -74,10 +63,9 @@ def evaluate(data_loader, model, evaluator, config):
     if not return_scores_by_sample:
         total_accuracies = total_accuracies/len(data_loader.dataset)
         total_anls = total_anls/len(data_loader.dataset)
-        total_ret_prec = total_ret_prec/len(data_loader.dataset)
         scores_by_samples = []
     
-    return total_accuracies, total_anls, total_ret_prec, all_pred_answers, scores_by_samples
+    return total_accuracies, total_anls, all_pred_answers, scores_by_samples
 
 
 def main_eval(config, local_rank=None):
@@ -123,10 +111,10 @@ def main_eval(config, local_rank=None):
     accuracy_list, anls_list, answer_page_pred_acc_list, pred_answers, scores_by_samples = evaluate(val_data_loader, model, evaluator, config)
 
     if not config.distributed or config.global_rank == 0:
-        accuracy, anls, answ_page_pred_acc = np.mean(accuracy_list), np.mean(anls_list), np.mean(answer_page_pred_acc_list)
+        accuracy, anls = np.mean(accuracy_list), np.mean(anls_list)
 
         inf_time = time_stamp_to_hhmmss(time.time() - start_time, string=True)
-        logger.log_val_metrics(accuracy, anls, answ_page_pred_acc, update_best=False)
+        logger.log_val_metrics(accuracy, anls, update_best=False)
 
         save_data = {
             "Model": config.model_name,
@@ -136,7 +124,6 @@ def main_eval(config, local_rank=None):
             "Inference time": inf_time,
             "Mean accuracy": accuracy,
             "Mean ANLS": anls,
-            "Mean Retrieval precision": answ_page_pred_acc,
             "Scores by samples": scores_by_samples,
         }
 
@@ -159,9 +146,9 @@ def fl_centralized_evaluation(server_round, parameters, config):
     evaluator = Evaluator(case_sensitive=False)
     logger = Logger(config=config)
 
-    accuracy, anls, ret_prec, _, _ = evaluate(val_loader, model, evaluator, config)  # data_loader, model, evaluator, **kwargs
+    accuracy, anls, _, _ = evaluate(val_loader, model, evaluator, config)  # data_loader, model, evaluator, **kwargs
     is_updated = evaluator.update_global_metrics(accuracy, anls, 0)
-    logger.log_val_metrics(accuracy, anls, ret_prec, update_best=is_updated)
+    logger.log_val_metrics(accuracy, anls, update_best=is_updated)
 
     print("Server-side evaluation accuracy {:2.4f} / ANLS {1.6f}".format(accuracy, anls))
     return float(0), len(val_loader), {"accuracy": float(accuracy), "anls": anls}
@@ -180,7 +167,7 @@ class FlowerClient(fl.client.NumPyClient):
         set_parameters_model(self.model, parameters)
         evaluator = Evaluator(case_sensitive=False)
         # loss, accuracy = test(self.model, self.valloader)
-        total_accuracies, total_anls, total_ret_prec, all_pred_answers, scores_by_samples = evaluate(self.valloader, self.model, evaluator, config)  # data_loader, model, evaluator, **kwargs
+        total_accuracies, total_anls, all_pred_answers, scores_by_samples = evaluate(self.valloader, self.model, evaluator, config)  # data_loader, model, evaluator, **kwargs
         return float(0), len(self.valloader), {"accuracy": float(total_accuracies), "anls": total_anls}   # First parameter is loss.
 
 

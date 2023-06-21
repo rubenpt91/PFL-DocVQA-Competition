@@ -2,7 +2,16 @@ import os, socket, datetime, getpass
 import wandb as wb
 
 
-class Logger:
+class Singleton(type):
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
+
+
+class Logger(metaclass=Singleton):
 
     def __init__(self, config):
 
@@ -59,7 +68,7 @@ class Logger:
         self.logger = wb.init(project="PFL-DocVQA-Competition", name=self.experiment_name, dir=self.log_folder, tags=tags, config=log_config)
         self._print_config(log_config)
 
-        self.current_epoch = 0
+        self.current_epoch = 1
         self.len_dataset = 0
 
     def _print_config(self, config):
@@ -81,20 +90,18 @@ class Logger:
         print("Model parameters: {:d} - Trainable: {:d} ({:2.2f}%)".format(
             total_params, trainable_params, trainable_params / total_params * 100))
 
-    def log_val_metrics(self, accuracy, anls, ret_prec, update_best=False):
-
-        str_msg = "Epoch {:d}: Accuracy {:2.2f}     ANLS {:2.4f}    Retrieval precision: {:2.2f}%".format(self.current_epoch, accuracy*100, anls, ret_prec*100)
+    def log_val_metrics(self, accuracy, anls, update_best=False):
+        str_msg = "FL Round {:d}: Accuracy {:2.2f}     ANLS {:2.4f}".format(self.current_epoch, accuracy*100, anls)
         self.logger.log({
             'Val/Epoch Accuracy': accuracy,
             'Val/Epoch ANLS': anls,
-            'Val/Epoch Ret. Prec': ret_prec,
         }, step=self.current_epoch*self.len_dataset + self.len_dataset)
 
         if update_best:
             str_msg += "\tBest Accuracy!"
             self.logger.config.update({
                 "Best Accuracy": accuracy,
-                "Best epoch": self.current_epoch
+                "Best FL Round": self.current_epoch
             }, allow_val_change=True)
 
         print(str_msg)
