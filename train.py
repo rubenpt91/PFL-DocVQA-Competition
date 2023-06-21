@@ -31,9 +31,7 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, cl
     param_keys = list(model.model.state_dict().keys())
     parameters = copy.deepcopy(list(model.model.state_dict().values()))
 
-    warnings.warn("\n\n" + str(fl_config) + "\n\n")
     agg_update = None
-
     if not config.use_dp and len(data_loaders) > 1:
         raise ValueError("Non private training should only use one data loader.")
 
