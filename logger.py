@@ -15,7 +15,7 @@ class Logger(metaclass=Singleton):
 
     def __init__(self, config):
 
-        self.log_folder = config.save_dir
+        self.log_folder = os.path.join(config.save_dir, 'communication_logs/')
 
         experiment_date = datetime.datetime.now().strftime('%Y.%m.%d_%H.%M.%S')
         self.experiment_name = "{:s}__{:}".format(config.model_name, experiment_date)
@@ -25,24 +25,14 @@ class Logger(metaclass=Singleton):
         machine = machine_dict.get(socket.gethostname(), socket.gethostname())
 
         dataset = config.dataset_name
-        page_retrieval = getattr(config, 'page_retrieval', '-').capitalize()
         visual_encoder = getattr(config, 'visual_module', {}).get('model', '-').upper()
 
-        document_pages = getattr(config, 'max_pages', None)
-        page_tokens = getattr(config, 'page_tokens', None)
         tags = [config.model_name, dataset, machine]
-
         log_config = {
-            'Model': config.model_name, 'Weights': config.model_weights, 'Dataset': dataset,  # 'Page retrieval': page_retrieval,
+            'Model': config.model_name, 'Weights': config.model_weights, 'Dataset': dataset,
             'Visual Encoder': visual_encoder, 'Batch size': config.batch_size,
             'Max. Seq. Length': getattr(config, 'max_sequence_length', '-'), 'lr': config.lr, 'seed': config.seed,
         }
-
-        if document_pages:
-            log_config['Max Pages'] = document_pages
-
-        if page_tokens:
-            log_config['PAGE tokens'] = page_tokens
 
         if config.flower:
             tags.append('FL Flower')
