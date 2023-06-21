@@ -101,7 +101,7 @@ class Logger(metaclass=Singleton):
             str_msg += "\tBest Accuracy!"
             self.logger.config.update({
                 "Best Accuracy": accuracy,
-                "Best epoch": self.current_epoch
+                "Best FL Round": self.current_epoch
             }, allow_val_change=True)
 
         print(str_msg)
