@@ -15,7 +15,8 @@ training_parameters:
   warmup_iterations: 1000
 
 fl_parameters:
-  num_clients: 2
+  sample_clients: 2
+  total_clients: 3  # 10 <=== Eventually will become 10 and MUST not be modified.
   num_rounds: 100
   iterations_per_fl_round: 2
 

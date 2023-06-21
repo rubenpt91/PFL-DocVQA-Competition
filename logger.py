@@ -39,7 +39,8 @@ class Logger(metaclass=Singleton):
 
             log_config.update({
                 'FL Flower': True,
-                'Num Clients': config.fl_params.num_clients,
+                'Sample Clients': config.fl_params.sample_clients,
+                'Total Clients': config.fl_params.total_clients,
                 'FL Rounds': config.fl_params.num_rounds,
                 'Iterations per FL Round': config.fl_params.iterations_per_fl_round
             })

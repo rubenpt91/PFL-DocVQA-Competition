@@ -234,7 +234,7 @@ if __name__ == '__main__':
     os.environ['MASTER_ADDR'] = 'localhost'
     os.environ['MASTER_PORT'] = '9957'
 
-    NUM_CLIENTS = config.fl_params.num_clients
+    # NUM_CLIENTS = config.fl_params.num_clients
     model = build_model(config)
     params = get_parameters_from_model(model)
 
@@ -242,10 +242,10 @@ if __name__ == '__main__':
     strategy = fl.server.strategy.FedAvg(
         # fraction_fit=config.dp_params.client_sampling_probability,  # Sample 100% of available clients for training
         fraction_fit=0.33,  # Sample 100% of available clients for training
-        fraction_evaluate=1,  # Sample 50% of available clients for evaluation
-        min_fit_clients=NUM_CLIENTS,  # Never sample less than 10 clients for training
-        min_evaluate_clients=NUM_CLIENTS,  # Never sample less than 5 clients for evaluation
-        min_available_clients=NUM_CLIENTS,  # Wait until all 10 clients are available
+        fraction_evaluate=1,  # Sample 100% of available clients for evaluation
+        min_fit_clients=config.fl_params.sample_clients,  # Never sample less than N clients for training
+        min_evaluate_clients=config.fl_params.sample_clients,  # Never sample less than N clients for evaluation
+        min_available_clients=config.fl_params.sample_clients,  # Wait until N clients are available
         # fit_metrics_aggregation_fn=weighted_average,  # <-- pass the metric aggregation function
         evaluate_metrics_aggregation_fn=weighted_average,  # <-- pass the metric aggregation function
         initial_parameters=fl.common.ndarrays_to_parameters(params),
@@ -264,7 +264,7 @@ if __name__ == '__main__':
     # Start simulation
     fl.simulation.start_simulation(
         client_fn=client_fn,
-        num_clients=NUM_CLIENTS,
+        num_clients=config.fl_params.total_clients,
         config=fl.server.ServerConfig(num_rounds=config.fl_params.num_rounds),
         strategy=strategy,
         client_resources=client_resources,
