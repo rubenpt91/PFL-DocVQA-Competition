@@ -21,7 +21,7 @@ fl_parameters:
   sample_clients: 2
   total_clients: 3  # 10 <=== Eventually will become 10 and MUST not be modified.
   num_rounds: 100
-  iterations_per_fl_round: 2
+  iterations_per_fl_round: 1
 
 dp_parameters:
   sensitivity: 0.5  # [0.5, 1.0, 1.5, 2.0, 2.5, 3.0]

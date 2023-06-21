@@ -18,4 +18,4 @@ dependencies:
     - transformers==4.27.2
     - editdistance==0.6.0
     - flwr[simulation]==1.4.0
-    - ray==1.11
+    # - ray==1.11
