@@ -88,7 +88,7 @@ def main_eval(config, local_rank=None):
     config.return_scores_by_sample = True
     config.return_answers = True
 
-    dataset = build_dataset(config, 'test')
+    dataset = build_dataset(config, 'val')
 
     if config.distributed:
         sampler = torch.utils.data.distributed.DistributedSampler(
@@ -174,7 +174,7 @@ class FlowerClient(fl.client.NumPyClient):
 def client_fn(client_id):
     """Create a Flower client representing a single organization."""
     model = build_model(config)
-    dataset = build_dataset(config, 'test')
+    dataset = build_dataset(config, 'val')
     val_data_loader = DataLoader(dataset, batch_size=config.batch_size, shuffle=False, collate_fn=collate_fn)
 
     return FlowerClient(model, val_data_loader, val_data_loader)
