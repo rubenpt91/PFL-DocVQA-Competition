@@ -193,15 +193,13 @@ if __name__ == '__main__':
         main_eval(config)
 
     else:
-        NUM_CLIENTS = config.num_clients
-
         # Create FedAvg strategy
         strategy = fl.server.strategy.FedAvg(
             fraction_fit=0,  # Sample 100% of available clients for training
             fraction_evaluate=0.5,  # Sample 50% of available clients for evaluation
             min_fit_clients=0,  # Never sample less than 10 clients for training
-            min_evaluate_clients=NUM_CLIENTS,  # Never sample less than 5 clients for evaluation
-            min_available_clients=NUM_CLIENTS,  # Wait until all 10 clients are available
+            min_evaluate_clients=1,  # Never sample less than 5 clients for evaluation
+            min_available_clients=1,  # Wait until all 10 clients are available
             evaluate_metrics_aggregation_fn=weighted_average,  # <-- pass the metric aggregation function
         )
 
@@ -214,8 +212,8 @@ if __name__ == '__main__':
         # Start simulation
         fl.simulation.start_simulation(
             client_fn=client_fn,
-            num_clients=NUM_CLIENTS,
-            config=fl.server.ServerConfig(num_rounds=config.num_rounds),
+            num_clients=1,
+            config=fl.server.ServerConfig(num_rounds=config.fl_params.num_rounds),
             strategy=strategy,
             client_resources=client_resources,
         )
