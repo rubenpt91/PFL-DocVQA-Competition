@@ -235,8 +235,8 @@ if __name__ == '__main__':
     # Create FedAvg strategy
     strategy = fl.server.strategy.FedAvg(
         # fraction_fit=config.dp_params.client_sampling_probability,  # Sample 100% of available clients for training
-        fraction_fit=0.33,  # Sample 100% of available clients for training
-        fraction_evaluate=config.fl_params.sample_clients,  # Sample N of available clients for evaluation
+        fraction_fit=1/config.fl_params.sample_clients,  # Sample 100% of available clients for training
+        fraction_evaluate=1/config.fl_params.sample_clients,  # Sample N of available clients for evaluation
         min_fit_clients=config.fl_params.sample_clients,  # Never sample less than N clients for training
         min_evaluate_clients=config.fl_params.sample_clients,  # Never sample less than N clients for evaluation
         min_available_clients=config.fl_params.sample_clients,  # Wait until N clients are available
