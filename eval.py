@@ -88,28 +88,27 @@ def main_eval(config):
     evaluator = Evaluator(case_sensitive=False)
     accuracy_list, anls_list, pred_answers, scores_by_samples = evaluate(val_data_loader, model, evaluator, config)
 
-    if not config.distributed or config.global_rank == 0:
-        accuracy, anls = np.mean(accuracy_list), np.mean(anls_list)
+    accuracy, anls = np.mean(accuracy_list), np.mean(anls_list)
 
-        inf_time = time_stamp_to_hhmmss(time.time() - start_time, string=True)
-        logger.log_val_metrics(accuracy, anls, update_best=False)
+    inf_time = time_stamp_to_hhmmss(time.time() - start_time, string=True)
+    logger.log_val_metrics(accuracy, anls, update_best=False)
 
-        save_data = {
-            "Model": config.model_name,
-            "Model_weights": config.model_weights,
-            "Dataset": config.dataset_name,
-            "Page retrieval": getattr(config, 'page_retrieval', '-').capitalize(),
-            "Inference time": inf_time,
-            "Mean accuracy": accuracy,
-            "Mean ANLS": anls,
-            "Scores by samples": scores_by_samples,
-        }
+    save_data = {
+        "Model": config.model_name,
+        "Model_weights": config.model_weights,
+        "Dataset": config.dataset_name,
+        "Page retrieval": getattr(config, 'page_retrieval', '-').capitalize(),
+        "Inference time": inf_time,
+        "Mean accuracy": accuracy,
+        "Mean ANLS": anls,
+        "Scores by samples": scores_by_samples,
+    }
 
-        experiment_date = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-        results_file = os.path.join(config.save_dir, 'results', "{:}_{:}_{:}__{:}.json".format(config.model_name, config.dataset_name, getattr(config, 'page_retrieval', '').lower(), experiment_date))
-        save_json(results_file, save_data)
+    experiment_date = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+    results_file = os.path.join(config.save_dir, 'results', "{:}_{:}_{:}__{:}.json".format(config.model_name, config.dataset_name, getattr(config, 'page_retrieval', '').lower(), experiment_date))
+    save_json(results_file, save_data)
 
-        print("Results correctly saved in: {:s}".format(results_file))
+    print("Results correctly saved in: {:s}".format(results_file))
 
 
 """ I think that in current version 1.4.0 centralized evaluation is still not working correctly.
