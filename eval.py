@@ -68,37 +68,15 @@ def evaluate(data_loader, model, evaluator, config):
     return total_accuracies, total_anls, all_pred_answers, scores_by_samples
 
 
-def main_eval(config, local_rank=None):
+def main_eval(config):
     start_time = time.time()
-
-    if config.distributed:
-        config.global_rank = config.client_id * config.num_gpus + local_rank
-
-        # Create distributed process group.
-        torch.distributed.init_process_group(
-            backend='nccl',
-            world_size=config.world_size,
-            rank=config.global_rank
-        )
-
-    if config.device == 'cuda' and local_rank != None:
-        config.local_rank = local_rank
-        config.device = torch.device("cuda:{:d}".format(local_rank))
 
     config.return_scores_by_sample = True
     config.return_answers = True
 
     dataset = build_dataset(config, 'val')
-
-    if config.distributed:
-        sampler = torch.utils.data.distributed.DistributedSampler(
-            dataset, num_replicas=config.world_size, rank=config.global_rank
-        )
-        pin_memory = True
-
-    else:
-        sampler = None
-        pin_memory = False
+    sampler = None
+    pin_memory = False
 
     val_data_loader = DataLoader(dataset, batch_size=config.batch_size, shuffle=False, collate_fn=collate_fn, pin_memory=pin_memory, sampler=sampler)
 
