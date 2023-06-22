@@ -13,7 +13,6 @@ visual_module:
 training_parameters:
   lr: 2e-4  # 2e-4
   batch_size: 2
-  train_epochs: 10
   warmup_iterations: 1000
 
 fl_parameters:
