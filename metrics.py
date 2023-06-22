@@ -1,7 +1,9 @@
 import editdistance
 
+from utils import Singleton
 
-class Evaluator:
+
+class Evaluator(metaclass=Singleton):
     def __init__(self, case_sensitive=False):
 
         self.case_sensitive = case_sensitive
@@ -26,15 +28,7 @@ class Evaluator:
             batch_accuracy.append(self._calculate_accuracy(gt, pred, answer_types[batch_idx]))
             batch_anls.append(self._calculate_anls(gt, pred, answer_types[batch_idx]))
 
-        # if accumulate_metrics:
-        #     self.total_accuracies.extend(batch_accuracy)
-        #     self.total_anls.extend(batch_anls)
-
         return {'accuracy': batch_accuracy, 'anls': batch_anls}
-
-    def get_retrieval_metric(self, gt_answer_page, pred_answer_page):
-        retrieval_precision = [1 if gt == pred else 0 for gt, pred in zip(gt_answer_page, pred_answer_page)] if pred_answer_page is not None else 0
-        return retrieval_precision
 
     def update_global_metrics(self, accuracy, anls, current_epoch):
         if accuracy > self.best_accuracy:
