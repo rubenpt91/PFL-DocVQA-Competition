@@ -86,7 +86,7 @@ def main_eval(config):
     logger.log_model_parameters(model)
 
     evaluator = Evaluator(case_sensitive=False)
-    accuracy_list, anls_list, answer_page_pred_acc_list, pred_answers, scores_by_samples = evaluate(val_data_loader, model, evaluator, config)
+    accuracy_list, anls_list, pred_answers, scores_by_samples = evaluate(val_data_loader, model, evaluator, config)
 
     if not config.distributed or config.global_rank == 0:
         accuracy, anls = np.mean(accuracy_list), np.mean(anls_list)
