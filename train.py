@@ -30,6 +30,7 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, cl
     model.model.train()
     param_keys = list(model.model.state_dict().keys())
     parameters = copy.deepcopy(list(model.model.state_dict().values()))
+    logger.current_epoch += 1
 
     agg_update = None
     if not config.use_dp and len(data_loaders) > 1:
@@ -116,8 +117,6 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, cl
     if config.flower:
         # log_communication(federated_round=fl_config["current_round"], sender=client_id, receiver=-1, data=parameters, log_location=fl_config["log_path"])
         log_communication(federated_round=fl_config["current_round"], sender=client_id, receiver=-1, data=parameters, log_location=logger.comms_log_file)
-
-    logger.current_epoch += 1
 
     # Send the weights to the server
     return upd_weights

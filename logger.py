@@ -52,7 +52,7 @@ class Logger(metaclass=Singleton):
         self.logger = wb.init(project="PFL-DocVQA-Competition", name=self.experiment_name, dir=self.log_folder, tags=tags, config=log_config)
         self._print_config(log_config)
 
-        self.current_epoch = 1
+        self.current_epoch = 0
         self.len_dataset = 0
 
     def _print_config(self, config):

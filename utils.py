@@ -121,6 +121,7 @@ def check_config(config):
 
         if not os.path.exists(config.save_dir):
             os.makedirs(config.save_dir)
+            os.makedirs(os.path.join(config.save_dir, 'results'))
             os.makedirs(os.path.join(config.save_dir, 'communication_logs'))
 
     return True
