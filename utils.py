@@ -1,7 +1,4 @@
-import ast, math, random
-from PIL import Image
-
-import os, yaml, json
+import os, ast, yaml, json, random, datetime
 import argparse
 
 import numpy as np
@@ -123,6 +120,9 @@ def check_config(config):
             os.makedirs(config.save_dir)
             os.makedirs(os.path.join(config.save_dir, 'results'))
             os.makedirs(os.path.join(config.save_dir, 'communication_logs'))
+
+    experiment_date = datetime.datetime.now().strftime('%Y.%m.%d_%H.%M.%S')
+    config.experiment_name = "{:s}__{:}".format(config.model_name, experiment_date)
 
     return True
 

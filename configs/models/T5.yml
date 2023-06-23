@@ -6,6 +6,7 @@ model_name: T5
 model_weights: rubentito/t5-base-mpdocvqa
 # model_weights: rubentito/t5-base-docile-elsa
 device: cuda
+seed: 42
 
 training_parameters:
   lr: 2e-4  # 2e-4

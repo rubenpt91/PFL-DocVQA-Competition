@@ -5,6 +5,7 @@ model_name: VT5
 model_weights: rubentito/t5-base-mpdocvqa
 max_source_length: 512
 device: cuda
+seed: 42
 
 visual_module:
   model: 'dit'  # 'vit' / 'dit'
