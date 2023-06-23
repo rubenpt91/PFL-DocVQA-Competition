@@ -80,7 +80,8 @@ class Logger(metaclass=Singleton):
         self.logger.log({
             'Val/Epoch Accuracy': accuracy,
             'Val/Epoch ANLS': anls,
-        }, step=self.current_epoch*self.len_dataset + self.len_dataset)
+        # }, step=self.current_epoch*self.len_dataset + self.len_dataset)
+        })
 
         if update_best:
             str_msg += "\tBest Accuracy!"
