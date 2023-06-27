@@ -17,7 +17,7 @@ To install all the dependencies you need to create a new conda environment with 
 
 ```bash
 $ conda env create -f environment.yml
-$ conda activate mp_docvqa
+$ conda activate pfl_docvqa
 ```
 
 Then, you need to manually install Ray library (due to some incompatibility issues, it does not allow to install it with the rest of the packages).
