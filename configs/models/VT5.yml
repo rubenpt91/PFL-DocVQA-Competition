@@ -10,11 +10,12 @@ seed: 42
 visual_module:
   model: 'dit'  # 'vit' / 'dit'
   model_weights: 'microsoft/dit-base-finetuned-rvlcdip'  # 'google/vit-base-patch16-224-in21k' / 'microsoft/dit-base-finetuned-rvlcdip'
+  finetune: False
 
 training_parameters:
   lr: 2e-4  # 2e-4
   batch_size: 2
-  warmup_iterations: 1000
+  # warmup_iterations: 1000
 
 fl_parameters:
   sample_clients: 2
@@ -26,4 +27,4 @@ dp_parameters:
   providers_per_fl_round: 50
   sensitivity: 0.5  # [0.5, 1.0, 1.5, 2.0, 2.5, 3.0]
   noise_multiplier: 1.182
-  client_sampling_probability: 0.1960
+  # client_sampling_probability: 0.1960

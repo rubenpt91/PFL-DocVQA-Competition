@@ -27,9 +27,9 @@ def parse_args():
     parser.add_argument('--flower', action='store_true', default=False, help='Use FL Flower.')
     parser.add_argument('--sample_clients', type=int, help='Number of sampled clients during FL.')
     parser.add_argument('--num_rounds', type=int, help='Number of FL rounds.')
-    parser.add_argument('--client_sampling_probability', type=float, help='.')  # (Number of selected clients / total number of clients)
+    # parser.add_argument('--client_sampling_probability', type=float, help='.')  # (Number of selected clients / total number of clients)
     parser.add_argument('--iterations_per_fl_round', type=int, help='Number of iterations per provider during each FL round.')
-    parser.add_argument('--providers_per_fl_round', type=int, help='Number of groups providers) sampled in each FL Round.')
+    parser.add_argument('--providers_per_fl_round', type=int, help='Number of groups (providers) sampled in each FL Round.')
 
     parser.add_argument('--use_dp', action='store_true', default=False, help='Add Differential Privacy noise.')
     parser.add_argument('--sensitivity', type=float, help='Upper bound of the contribution per group (provider).')

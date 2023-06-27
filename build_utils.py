@@ -79,9 +79,7 @@ def build_provider_dataset(config, split, provider_to_doc, provider, client_id=N
     if client_id:
         dataset_kwargs['client_id'] = client_id
 
-
     # Build dataset
-
     indexes = provider_to_doc[provider]
     if config.dataset_name == 'PFL-DocVQA':
         from datasets.PFL_DocVQA import PFL_DocVQA
