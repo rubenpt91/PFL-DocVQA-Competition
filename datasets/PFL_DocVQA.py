@@ -65,19 +65,15 @@ class PFL_DocVQA(Dataset):
                 boxes = np.array([bbox for bbox in record['ocr_normalized_boxes']])
 
         if self.use_images:
-            image_names = os.path.join(self.images_dir, "{:s}".format(record['image_name']))
+            image_names = os.path.join(self.images_dir, "{:s}.jpg".format(record['image_name']))
             images = Image.open(image_names).convert("RGB")
-
-        # start_idxs, end_idxs = self._get_start_end_idx(context, answers)
 
         sample_info = {
             # 'question_id': "{:s}_{:d}".format(record['set_name'], idx),
             'question_id': record.get('question_id', "{:s}-{:d}".format(record['set_name'], idx)),
             'questions': question,
             'contexts': context,
-            # 'context_page_corresp': context_page_corresp,
             'answers': answers,
-            # 'answer_page_idx': answer_page_idx,
         }
 
         if self.use_images:
@@ -87,15 +83,6 @@ class PFL_DocVQA(Dataset):
         if self.get_raw_ocr_data:
             sample_info['words'] = words
             sample_info['boxes'] = boxes
-            # sample_info['num_pages'] = num_pages
-
-        # else:  # Information for extractive models
-        #     # sample_info['context_page_corresp'] = context_page_corresp
-        #     sample_info['start_indxs'] = start_idxs
-        #     sample_info['end_indxs'] = end_idxs
-
-        # if self.get_doc_id:
-        #     sample_info['doc_id'] = [record['image_name'][page_ix] for page_ix in range(first_page, last_page)]
 
         return sample_info
 

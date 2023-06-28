@@ -35,7 +35,7 @@ def evaluate(data_loader, model, evaluator, config):
     for batch_idx, batch in enumerate(tqdm(data_loader)):
         bs = len(batch['question_id'])
         with torch.no_grad():
-            outputs, pred_answers, pred_answer_page, answer_conf = model.forward(batch, return_pred_answer=True)
+            outputs, pred_answers, answer_conf = model.forward(batch, return_pred_answer=True)
 
         metric = evaluator.get_metrics(batch['answers'], pred_answers, batch.get('answer_type', None))
 
@@ -45,8 +45,7 @@ def evaluate(data_loader, model, evaluator, config):
                     'accuracy': metric['accuracy'][batch_idx],
                     'anls': metric['anls'][batch_idx],
                     'pred_answer': pred_answers[batch_idx],
-                    'pred_answer_conf': answer_conf[batch_idx],
-                    'pred_answer_page': pred_answer_page[batch_idx] if pred_answer_page is not None else None
+                    'pred_answer_conf': answer_conf[batch_idx]
                 }
 
         if return_scores_by_sample:

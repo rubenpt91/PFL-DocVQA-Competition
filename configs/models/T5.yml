@@ -1,5 +1,4 @@
 save_dir: save/
-log_path: save/comms/communication_log2.csv
 model_name: T5
 # model_weights: t5-base
 # model_weights: weights/t5_oracle_mp-docvqa__best.ckpt
