@@ -1,8 +1,9 @@
 # How to use
 
 1. [Set-up environment](#set-up-environment)
-2. [Train and evaluate](#train-and-evaluate)
-3. [Configuration files and input arguments](#configuration-files-and-input-arguments)
+2. [Download Dataset](#download-dataset)
+3. [Train and evaluate](#train-and-evaluate)
+4. [Configuration files and input arguments](#configuration-files-and-input-arguments)
    1. [Input Arguments](#input-arguments)
    2. [Datasets configuration files](#datasets-configuration-files)
    3. [Models configuration files](#models-configuration-files)
@@ -10,10 +11,17 @@
       2. [Training parameters](#training-parameters)
       3. [Federated Learning parameters](#federated-learning-parameters)
       4. [Differential Privacy Parameters](#differential-privacy-parameters)
+5. [Project Structure](#project-structure)
 
 ## Set-up environment
 
-To install all the dependencies you need to create a new conda environment with the provided yml file:
+First, clone the repository to your local machine:
+```bash
+$ git clone https://github.com/rubenpt91/PFL-DocVQA-Competition.git
+$ cd PFL-DocVQA-Competition
+```
+
+To install all the dependencies, you need to create a new conda environment with the provided yml file:
 
 ```bash
 $ conda env create -f environment.yml
@@ -26,19 +34,29 @@ Then, you need to manually install Ray library (due to some incompatibility issu
 $ (pfl_dovqa) pip install ray==1.11
 ```
 
+## Download dataset
+
+Download the dataset from the [ELSA Benchmarks Platform](https://benchmarks.elsa-ai.eu/?ch=2&com=downloads).
+Then, modify in the dataset configuration file `configs/datasets/PFL-DocVQA.yml` the following keys:
+* **imdb_dir**: Path to the imdb directory with all train and validation clients.
+* **images_dir**: Path to the dataset images.
+* **provider_docs**: Path to _data_points.json_.
+
+
 ## Train and evaluate
 
-To use the framework you only need to call the `train.py` or `eval.py` scripts with the dataset and model you want to use. For example:
+To use the framework you only need to call the `train.py` or `eval.py` scripts with the dataset and model you want to use.
+The framework is not prepared to performed centralized training. Therefore, you always must specify `--flower` flag. For example:
 
 ```bash
-$ (pfl_dovqa) python train.py --dataset MP-DocVQA --model VT5
+$ (pfl_dovqa) python train.py --dataset PFL-DocVQA --model VT5 --flower
 ```
 
 The name of the dataset and the model **must** match with the name of the configuration under the `configs/dataset` and `configs/models` respectively. This allows having different configuration files for the same dataset or model. <br>
-If you want to use Federated Learning or Differential Privacy, you just need to specify ```--flower``` or ```--use_dp``` respectively.
+In addition, to apply or Differential Privacy, you just need to specify ```--use_dp```.
 
 ```bash
-$ (pfl_dovqa) python train.py --dataset MP-DocVQA --model VT5 --flower --use_dp
+$ (pfl_dovqa) python train.py --dataset PFL-DocVQA --model VT5 --flower --use_dp
 ```
 
 Below, we show a descriptive list of the possible input arguments that can be used.
@@ -119,3 +137,35 @@ Below, we show a descriptive list of the possible input arguments that can be us
 | providers_per_fl_round | Number of groups (providers) sampled in each FL Round. | Integer (50)     |
 | sensitivity            | Differential Privacy Noise sensitivity.                | Float   (0.5)    |
 | noise_multiplier       | Differential Privacy noise multiplier.                 | Float   (1.182)  |
+
+## Project structure
+
+```maarkdown
+PFL-DocVQA
+├── configs
+│   ├── datasets
+│   │   └── PFL-DocVQA.yml
+│   └── models
+│       └── VT5.yml
+├── datasets
+│   └── PFL-DocVQA.yml
+├── models
+│   └── VT5.py
+├── communication
+│   ├── compute_tensor_size.py
+│   ├── log_communication.py
+│   └── tests/
+├── differential_privacy
+│   ├── dp_utils.py
+│   └── test_dp_utils.py
+├── readme.md
+├── environment.yml
+├── utils.py
+├── utils_parallel.py
+├── build_utils.py
+├── logger.py
+├── checkpoint.py
+├── train.py
+├── eval.py
+└── metrics.py
+```
