@@ -14,6 +14,7 @@
 ## Clone repository
 ```bash
 $ git clone git@github.com:rubenpt91/PFL-DocVQA-Competition.git
+$ cd PFL-DocVQA-Competition
 ```
 ## Set-up environment
 
@@ -29,6 +30,9 @@ Then, you need to manually install Ray library (due to some incompatibility issu
 ```bash
 $ (pfl_dovqa) pip install ray==1.11
 ```
+
+## Download dataset
+tbd
 
 ## Train and evaluate
 
