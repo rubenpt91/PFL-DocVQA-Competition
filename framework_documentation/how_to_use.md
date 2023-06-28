@@ -11,6 +11,10 @@
       3. [Federated Learning parameters](#federated-learning-parameters)
       4. [Differential Privacy Parameters](#differential-privacy-parameters)
 
+## Clone repository
+```bash
+$ git clone git@github.com:rubenpt91/PFL-DocVQA-Competition.git
+```
 ## Set-up environment
 
 To install all the dependencies you need to create a new conda environment with the provided yml file:
