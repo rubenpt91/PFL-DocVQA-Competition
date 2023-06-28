@@ -1,31 +1,24 @@
-import random
+import os, shutil, random
 import numpy as np
+from utils import save_yaml
 
 import torch
 import torch.nn as nn
-from click.core import batch
 from transformers import T5Tokenizer, T5ForConditionalGeneration
-import models._model_utils as model_utils
 from models._modules import CustomT5Config, SpatialEmbeddings, VisualEmbeddings
+import models._model_utils as model_utils
 import transformers.models.t5.modeling_t5
 
 
 class ProxyVT5:
     def __init__(self, config):
-        self.batch_size = config.batch_size
-        self.tokenizer = T5Tokenizer.from_pretrained(config.model_weights)
-        self.model = T5ForConditionalGeneration.from_pretrained(config.model_weights)
-        self.page_retrieval = config.page_retrieval.lower() if 'page_retrieval' in config else None
         self.max_input_tokens = getattr(config, 'max_input_tokens', 512)
 
         t5_config = CustomT5Config.from_pretrained(config.model_weights)
         t5_config.visual_module_config = config.visual_module
-
         self.spatial_embedding = SpatialEmbeddings(t5_config).to(config.device)
         self.visual_embedding = VisualEmbeddings(t5_config).to(config.device)
-
-    def parallelize(self):
-        self.model = nn.DataParallel(self.model)
+        self.load_model(config.model_weights)
 
     def prepare_inputs_for_vqa(self, question, words, boxes, images, answers=None):
         bs = len(words)
@@ -109,47 +102,12 @@ class ProxyVT5:
         boxes = batch['boxes']
         images = batch['images']
         answers = batch['answers']
-        bs = len(question)
 
-        if self.page_retrieval == 'logits':
-            num_pages = batch['num_pages']
-            outputs = []
-            pred_answers = []
-            pred_answer_pages = []
-            pred_answers_conf = []
+        input_embeds, attention_mask, labels = self.prepare_inputs_for_vqa(question, words, boxes, images, answers)
+        outputs = self.model(inputs_embeds=input_embeds, attention_mask=attention_mask, labels=labels)
+        pred_answers, pred_answers_conf = self.get_answer_from_model_output(input_embeds, attention_mask) if return_pred_answer else None
 
-            for batch_idx in range(bs):
-                input_embeds, attention_mask, _ = self.prepare_inputs_for_vqa([question[batch_idx]]*num_pages[batch_idx], words[batch_idx], boxes[batch_idx])  # Answers are not considered. Logits set-up is made only for inference.
-                pred_answer, logits = self.get_answer_from_model_output(input_embeds, attention_mask)
-                # input_text = ["question: {:s}  context: {:s}".format(q, c) for q, c in zip([question[batch_idx]]*len(context[batch_idx]), context[batch_idx])]
-                # tokens = self.tokenizer(input_text, return_tensors='pt', padding=True, truncation=True).to(self.model.device)
-
-                max_logits = -999999
-                answer_page = None
-                best_answer = None
-                for page_ix in range(len(input_embeds)):
-                    if logits[page_ix] > max_logits:
-                        max_logits = logits[page_ix]
-                        answer_page = page_ix
-                        best_answer = pred_answer[page_ix]
-
-                outputs.append(None)  # outputs.append(document_outputs)  # During inference outputs are not used.
-                pred_answers.append(best_answer)
-                pred_answer_pages.append(answer_page)
-                pred_answers_conf.append(max_logits)
-
-        else:
-            input_embeds, attention_mask, labels = self.prepare_inputs_for_vqa(question, words, boxes, images, answers)
-            outputs = self.model(inputs_embeds=input_embeds, attention_mask=attention_mask, labels=labels)
-            pred_answers, pred_answers_conf = self.get_answer_from_model_output(input_embeds, attention_mask) if return_pred_answer else None
-
-            if self.page_retrieval == 'oracle':
-                pred_answer_pages = batch['answer_page_idx']
-
-            elif self.page_retrieval == 'concat':
-                pred_answer_pages = None
-
-        return outputs, pred_answers, pred_answer_pages, pred_answers_conf
+        return outputs, pred_answers, pred_answers_conf
 
     def get_answer_from_model_output(self, input_embeds, attention_mask):
         output = self.model.generate(inputs_embeds=input_embeds, attention_mask=attention_mask, output_scores=True, return_dict_in_generate=True, output_attentions=True)
@@ -157,3 +115,59 @@ class ProxyVT5:
         pred_answers_conf = model_utils.get_generative_confidence(output)
 
         return pred_answers, pred_answers_conf
+
+    def save_model(self, save_dir, epoch, kwargs, update_best):
+
+        # Save language part.
+        self.model.save_pretrained(os.path.join(save_dir, "epoch_{:d}.ckpt".format(epoch), "lm_model"))
+        self.tokenizer.save_pretrained(os.path.join(save_dir, "epoch_{:d}.ckpt".format(epoch), "lm_model"))
+
+        # Save spatial embedding.
+        torch.save(self.spatial_embedding.state_dict(), os.path.join(save_dir, "epoch_{:d}.ckpt".format(epoch), "sp_emb".format(epoch)))
+
+        # Save visual embedding.
+        self.visual_embedding.image_model.save_pretrained(os.path.join(save_dir, "epoch_{:d}.ckpt".format(epoch), "vm_model"))
+        self.visual_embedding.feature_extractor.save_pretrained(os.path.join(save_dir, "epoch_{:d}.ckpt".format(epoch), "vm_model"))
+        torch.save(self.visual_embedding.visual_emb_matcher.state_dict(), os.path.join(save_dir, "epoch_{:d}.ckpt".format(epoch), "vm_model", "emb_mlp"))
+
+        # Save config
+        save_yaml(os.path.join(save_dir, "epoch_{:d}.ckpt".format(epoch), "experiment_config.yml"), kwargs)
+        shutil.copy(os.path.join(save_dir, "epoch_{:d}.ckpt".format(epoch), "lm_model", "config.json"), os.path.join(save_dir, "epoch_{:d}.ckpt".format(epoch), "config.json"))
+
+        if update_best:
+            # Save language part.
+            self.model.save_pretrained(os.path.join(save_dir, "best.ckpt", "lm_model"))
+            self.tokenizer.save_pretrained(os.path.join(save_dir, "best.ckpt", "lm_model"))
+
+            # Save spatial embedding.
+            torch.save(self.spatial_embedding.state_dict(), os.path.join(save_dir, "best.ckpt", "sp_emb".format(epoch)))
+
+            # Save visual embedding.
+            self.visual_embedding.image_model.save_pretrained(os.path.join(save_dir, "best.ckpt", "vm_model"))
+            self.visual_embedding.feature_extractor.save_pretrained(os.path.join(save_dir, "best.ckpt", "vm_model"))
+            torch.save(self.visual_embedding.visual_emb_matcher.state_dict(), os.path.join(save_dir, "best.ckpt", "vm_model", "emb_mlp"))
+
+            # Save config
+            shutil.copy(os.path.join(save_dir, "best.ckpt", "lm_model", "config.json"), os.path.join(save_dir, "best.ckpt", "config.json"))
+            save_yaml(os.path.join(save_dir, "best.ckpt", "experiment_config.yml"), kwargs)
+
+    def load_model(self, load_weights):
+
+        # Load local weights
+        if load_weights.endswith('.ckpt'):
+            # Load language part.
+            self.tokenizer = T5Tokenizer.from_pretrained(os.path.join(load_weights, "lm_model"))
+            self.model = T5ForConditionalGeneration.from_pretrained(os.path.join(load_weights, "lm_model"))
+
+            # Load spatial embedding.
+            self.spatial_embedding.load_state_dict(torch.load(os.path.join(load_weights, "sp_emb")))
+
+            # Load visual embedding.
+            self.visual_embedding.image_model.from_pretrained(os.path.join(load_weights, "vm_model"))
+            self.visual_embedding.feature_extractor.from_pretrained(os.path.join(load_weights, "vm_model"))
+            self.visual_embedding.visual_emb_matcher.load_state_dict(torch.load(os.path.join(load_weights, "vm_model", "emb_mlp")))
+
+        # Load weights directly from Huggingface
+        else:
+            self.tokenizer = T5Tokenizer.from_pretrained(load_weights)
+            self.model = T5ForConditionalGeneration.from_pretrained(load_weights)

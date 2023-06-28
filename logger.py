@@ -46,7 +46,7 @@ class Logger(metaclass=Singleton):
                 'DP': True,
                 'DP Sensitivity': config.dp_params.sensitivity,
                 'Noise Multiplier': config.dp_params.noise_multiplier,
-                'Client sampling prob.': config.dp_params.client_sampling_probability,
+                # 'Client sampling prob.': config.dp_params.client_sampling_probability,
                 'Providers per FL Round': config.dp_params.providers_per_fl_round
             })
 

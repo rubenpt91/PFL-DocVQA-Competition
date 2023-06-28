@@ -1,7 +1,5 @@
 import random
-import warnings
 
-import torch.nn as nn
 from transformers import T5Tokenizer, T5ForConditionalGeneration
 import models._model_utils as model_utils
 import transformers.models.t5.modeling_t5
@@ -12,10 +10,6 @@ class T5:
         self.batch_size = config.batch_size
         self.tokenizer = T5Tokenizer.from_pretrained(config.model_weights)
         self.model = T5ForConditionalGeneration.from_pretrained(config.model_weights)
-        self.page_retrieval = config.page_retrieval.lower() if 'page_retrieval' in config else None
-
-    def parallelize(self):
-        self.model = nn.DataParallel(self.model)
 
     def prepare_inputs_for_vqa(self, question, context, answers=None):
         input_text = ["question: {:s}  context: {:s}".format(q, c) for q, c in zip(question, context)]
@@ -40,9 +34,7 @@ class T5:
         outputs = self.model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
         pred_answers, pred_answers_conf = self.get_answer_from_model_output(input_ids, attention_mask) if return_pred_answer else None
 
-        pred_answer_pages = None
-
-        return outputs, pred_answers, pred_answer_pages, pred_answers_conf
+        return outputs, pred_answers, pred_answers_conf
 
     def get_answer_from_model_output(self, input_ids, attention_mask):
         output = self.model.generate(input_ids, attention_mask=attention_mask, output_scores=True, return_dict_in_generate=True, output_attentions=True)

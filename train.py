@@ -52,7 +52,7 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, cl
             for batch_idx, batch in enumerate(provider_dataloader):
 
                 gt_answers = batch['answers']
-                outputs, pred_answers, pred_answer_page, answer_conf = model.forward(batch, return_pred_answer=True)
+                outputs, pred_answers, answer_conf = model.forward(batch, return_pred_answer=True)
                 loss = outputs.loss + outputs.ret_loss if hasattr(outputs, 'ret_loss') else outputs.loss
 
                 # total_loss += loss.item() / len(batch['question_id'])
@@ -143,9 +143,7 @@ class FlowerClient(fl.client.NumPyClient):
     def set_parameters(self, model, parameters, config):
         params_dict = zip(model.model.state_dict().keys(), parameters)
         state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
-        if config["log_path"] is not None:
-            # log_communication(federated_round=config["current_round"], sender=-1, receiver=self.client_id, data=parameters, log_location=config["log_path"])
-            log_communication(federated_round=config["current_round"], sender=-1, receiver=self.client_id, data=parameters, log_location=self.logger.comms_log_file)
+        log_communication(federated_round=config["current_round"], sender=-1, receiver=self.client_id, data=parameters, log_location=self.logger.comms_log_file)
 
         model.model.load_state_dict(state_dict, strict=True)
 
@@ -195,11 +193,17 @@ def get_on_fit_config_fn(log_path):
         """Return training configuration dict for each round."""
         config = {
             "current_round": server_round,
-            "log_path": log_path
         }
         return config
 
     return fit_config
+
+def fit_config(server_round: int):
+    """Return training configuration dict for each round."""
+    config = {
+        "current_round": server_round,
+    }
+    return config
 
 
 # def get_on_eval_config_fn(config):
@@ -244,7 +248,7 @@ if __name__ == '__main__':
         evaluate_metrics_aggregation_fn=weighted_average,  # <-- pass the metric aggregation function
         initial_parameters=fl.common.ndarrays_to_parameters(params),
         # on_fit_config_fn=get_on_fit_config_fn(config.log_path),
-        on_fit_config_fn=get_on_fit_config_fn(config.log_path),  # Log path hardcoded according to /save dir
+        on_fit_config_fn=fit_config,  # Log path hardcoded according to /save dir
         # evaluate_fn=fl_centralized_evaluation,  # Pass the centralized evaluation function
         on_evaluate_config_fn=evaluate_config,
         # on_evaluate_config_fn=get_on_eval_config_fn(config),
