@@ -67,28 +67,31 @@ class Logger(metaclass=Singleton):
         total_params = sum(p.numel() for p in model.model.parameters())
         trainable_params = sum(p.numel() for p in model.model.parameters() if p.requires_grad)
 
-        self.logger.config.update({
-            'Model Params': int(total_params / 1e6),  # In millions
-            'Model Trainable Params': int(trainable_params / 1e6)  # In millions
-        })
+        if self.logger:
+            self.logger.config.update({
+                'Model Params': int(total_params / 1e6),  # In millions
+                'Model Trainable Params': int(trainable_params / 1e6)  # In millions
+            })
 
         print("Model parameters: {:d} - Trainable: {:d} ({:2.2f}%)".format(
             total_params, trainable_params, trainable_params / total_params * 100))
 
     def log_val_metrics(self, accuracy, anls, update_best=False):
         str_msg = "FL Round {:d}: Accuracy {:2.2f}     ANLS {:2.4f}".format(self.current_epoch, accuracy*100, anls)
-        self.logger.log({
-            'Val/Epoch Accuracy': accuracy,
-            'Val/Epoch ANLS': anls,
-        # }, step=self.current_epoch*self.len_dataset + self.len_dataset)
-        })
 
-        if update_best:
-            str_msg += "\tBest Accuracy!"
-            self.logger.config.update({
-                "Best Accuracy": accuracy,
-                "Best FL Round": self.current_epoch
-            }, allow_val_change=True)
+        if self.logger:
+            self.logger.log({
+                'Val/Epoch Accuracy': accuracy,
+                'Val/Epoch ANLS': anls,
+            # }, step=self.current_epoch*self.len_dataset + self.len_dataset)
+            })
+
+            if update_best:
+                str_msg += "\tBest Accuracy!"
+                self.logger.config.update({
+                    "Best Accuracy": accuracy,
+                    "Best FL Round": self.current_epoch
+                }, allow_val_change=True)
 
         print(str_msg)
 
