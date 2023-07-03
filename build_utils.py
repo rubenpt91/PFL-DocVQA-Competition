@@ -6,8 +6,11 @@ from transformers import get_scheduler
 
 
 def build_optimizer(model, length_train_loader, config):
-    optimizer_class = getattr(transformers, 'AdamW')
+    optimizer_class = getattr(torch.optim, 'AdamW')
     optimizer = optimizer_class(model.model.parameters(), lr=float(config.lr))
+
+    # optimizer_class = getattr(transformers, 'AdamW')
+    # optimizer = optimizer_class(model.model.parameters(), lr=float(config.lr))
     # num_training_steps = config.train_epochs * length_train_loader
 
     # if config.flower and config.flower and config.fl_params.num_rounds:
