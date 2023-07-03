@@ -14,13 +14,13 @@ visual_module:
 
 training_parameters:
   lr: 2e-4  # 2e-4
-  batch_size: 2
+  batch_size: 10
   # warmup_iterations: 1000
 
 fl_parameters:
   sample_clients: 2
-  total_clients: 3  # 10 <=== Eventually will become 10 and MUST not be modified.
-  num_rounds: 100
+  total_clients: 10
+  num_rounds: 50
   iterations_per_fl_round: 1
 
 dp_parameters:

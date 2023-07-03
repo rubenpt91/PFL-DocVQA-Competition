@@ -1,4 +1,4 @@
 dataset_name: PFL-DocVQA
-imdb_dir: /data/shared/DocILE/elsa_imdb
-images_dir: /data/shared/DocILE/images
-provider_docs: /data/shared/DocILE/elsa_imdb/data_points.json
+imdb_dir: /data/shared/PFL-DocVQA/imdb
+images_dir: /data/shared/PFL-DocVQA/images
+provider_docs: /data/shared/PFL-DocVQA/imdb/data_points.json
