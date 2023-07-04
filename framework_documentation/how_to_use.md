@@ -11,8 +11,8 @@
       2. [Training parameters](#training-parameters)
       3. [Federated Learning parameters](#federated-learning-parameters)
       4. [Differential Privacy Parameters](#differential-privacy-parameters)
-5. [Project Structure](#project-structure)
-6. [FL Flower Simulator](#fl-flower-simulator)
+5. [Monitor experiments](#monitor-experiments)
+6. [Project Structure](#project-structure)
 
 ## Set-up environment
 
@@ -140,7 +140,7 @@ Below, we show a descriptive list of the possible input arguments that can be us
 | noise_multiplier       | Differential Privacy noise multiplier.                 | Float   (1.182)  |
 
 
-## Monitor your training
+## Monitor experiments
 
 By default, the framework will log all the training and evaluation process in [Weights and Biases (wandb)](https://wandb.ai/home). <br>
 
