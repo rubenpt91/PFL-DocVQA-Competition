@@ -18,6 +18,7 @@ from differential_privacy.dp_utils import (add_dp_noise, clip_parameters, flatte
 from eval import evaluate  # fl_centralized_evaluation
 from logger import Logger
 from metrics import Evaluator
+from checkpoint import save_model
 from utils import load_config, parse_args, seed_everything
 from utils_parallel import get_parameters_from_model, set_parameters_model, weighted_average
 from collections import OrderedDict
@@ -153,6 +154,7 @@ class FlowerClient(fl.client.NumPyClient):
         accuracy, anls, _, _ = evaluate(self.valloader, self.model, self.evaluator, config)  # data_loader, model, evaluator, **kwargs
         is_updated = self.evaluator.update_global_metrics(accuracy, anls, 0)
         self.logger.log_val_metrics(accuracy, anls, update_best=is_updated)
+        save_model(model, config["current_round"], update_best=is_updated, kwargs=args)
 
         return float(0), len(self.valloader), {"accuracy": float(accuracy), "anls": anls}
 
@@ -185,18 +187,6 @@ def client_fn(client_id):
     logger = Logger(config=config)
     return FlowerClient(model, train_data_loaders, val_data_loader, optimizer, lr_scheduler, evaluator, logger, config, client_id)
 
-
-def get_on_fit_config_fn(log_path):
-    """Return a function which returns training configurations."""
-
-    def fit_config(server_round: int):
-        """Return training configuration dict for each round."""
-        config = {
-            "current_round": server_round,
-        }
-        return config
-
-    return fit_config
 
 def fit_config(server_round: int):
     """Return training configuration dict for each round."""
@@ -239,7 +229,7 @@ if __name__ == '__main__':
     # Create FedAvg strategy
     strategy = fl.server.strategy.FedAvg(
         # fraction_fit=config.dp_params.client_sampling_probability,  # Sample 100% of available clients for training
-        fraction_fit=1/config.fl_params.sample_clients,  # Sample 100% of available clients for training
+        fraction_fit=config.fl_params.sample_clients/config.fl_params.total_clients,
         fraction_evaluate=1/config.fl_params.sample_clients,  # Sample N of available clients for evaluation
         min_fit_clients=config.fl_params.sample_clients,  # Never sample less than N clients for training
         min_evaluate_clients=config.fl_params.sample_clients,  # Never sample less than N clients for evaluation
