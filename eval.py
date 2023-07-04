@@ -10,6 +10,7 @@ from logger import Logger
 from metrics import Evaluator
 from utils import parse_args, time_stamp_to_hhmmss, load_config, save_json
 from build_utils import build_model, build_dataset
+from checkpoint import save_model
 
 import flwr as fl
 from utils_parallel import get_parameters_from_model, set_parameters_model, weighted_average
@@ -125,6 +126,7 @@ def fl_centralized_evaluation(server_round, parameters, config):
     accuracy, anls, _, _ = evaluate(val_loader, model, evaluator, config)  # data_loader, model, evaluator, **kwargs
     is_updated = evaluator.update_global_metrics(accuracy, anls, 0)
     logger.log_val_metrics(accuracy, anls, update_best=is_updated)
+    save_model(model, config.current_round, update_best=is_updated, kwargs=config)
 
     print("Server-side evaluation accuracy {:2.4f} / ANLS {1.6f}".format(accuracy, anls))
     return float(0), len(val_loader), {"accuracy": float(accuracy), "anls": anls}

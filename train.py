@@ -214,7 +214,7 @@ if __name__ == '__main__':
     strategy = fl.server.strategy.FedAvg(
         # fraction_fit=config.dp_params.client_sampling_probability,  # Sample 100% of available clients for training
         fraction_fit=config.fl_params.sample_clients/config.fl_params.total_clients,
-        fraction_evaluate=1/config.fl_params.sample_clients,  # Sample N of available clients for evaluation
+        fraction_evaluate=config.fl_params.sample_clients/config.fl_params.total_clients,  # Sample N of available clients for evaluation
         min_fit_clients=config.fl_params.sample_clients,  # Never sample less than N clients for training
         min_evaluate_clients=config.fl_params.sample_clients,  # Never sample less than N clients for evaluation
         min_available_clients=config.fl_params.sample_clients,  # Wait until N clients are available
@@ -224,7 +224,6 @@ if __name__ == '__main__':
         on_fit_config_fn=get_config_fn(),  # Log path hardcoded according to /save dir
         # evaluate_fn=fl_centralized_evaluation,  # Pass the centralized evaluation function
         on_evaluate_config_fn=get_config_fn(),
-        # on_evaluate_config_fn=get_on_eval_config_fn(config),
     )
 
     # Specify client resources if you need GPU (defaults to 1 CPU and 0 GPU)

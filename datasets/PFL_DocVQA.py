@@ -50,7 +50,7 @@ class PFL_DocVQA(Dataset):
         record = self.imdb[idx]
 
         question = record["question"]
-        answers = list(set(answer.lower() for answer in record['answers'])) if 'answers' in record else None
+        answers = [record['answer'].lower()]
         # answer_page_idx = record['answer_page_idx']
 
         context = " ".join([word.lower() for word in record['ocr_tokens']])
