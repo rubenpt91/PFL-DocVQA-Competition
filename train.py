@@ -2,7 +2,6 @@ import copy
 import json
 import os
 import random
-import warnings
 from collections import OrderedDict
 from communication.log_communication import log_communication
 
@@ -193,37 +192,10 @@ def get_config_fn():
 
     def custom_config(server_round: int):
         """Return evaluate configuration dict for each round."""
-        warnings.warn(str(config))
         config.current_round = server_round
         return config
 
     return custom_config
-
-
-def fit_config(server_round: int):
-    """Return training configuration dict for each round."""
-    config = {
-        "current_round": server_round,
-    }
-    return config
-
-
-# def get_on_eval_config_fn(config):
-#     """Return a function which returns training configurations."""
-#
-#     def evaluate_config(server_round: int):
-#         """Return evaluate configuration dict for each round."""
-#         config.current_round = server_round
-#
-#         return config
-#
-#     return evaluate_config
-
-def evaluate_config(server_round: int):
-    """Return evaluate configuration dict for each round."""
-    config.current_round = server_round
-
-    return config
 
 
 if __name__ == '__main__':
@@ -251,7 +223,7 @@ if __name__ == '__main__':
         initial_parameters=fl.common.ndarrays_to_parameters(params),
         on_fit_config_fn=get_config_fn(),  # Log path hardcoded according to /save dir
         # evaluate_fn=fl_centralized_evaluation,  # Pass the centralized evaluation function
-        on_evaluate_config_fn=evaluate_config,
+        on_evaluate_config_fn=get_config_fn(),
         # on_evaluate_config_fn=get_on_eval_config_fn(config),
     )
 

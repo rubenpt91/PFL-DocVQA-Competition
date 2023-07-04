@@ -116,23 +116,23 @@ class ProxyVT5:
 
         return pred_answers, pred_answers_conf
 
-    def save_model(self, save_dir, epoch, kwargs, update_best):
+    def save_model(self, save_dir, round, kwargs, update_best):
 
         # Save language part.
-        self.model.save_pretrained(os.path.join(save_dir, "epoch_{:d}.ckpt".format(epoch), "lm_model"))
-        self.tokenizer.save_pretrained(os.path.join(save_dir, "epoch_{:d}.ckpt".format(epoch), "lm_model"))
+        self.model.save_pretrained(os.path.join(save_dir, "round_{:d}.ckpt".format(round), "lm_model"))
+        self.tokenizer.save_pretrained(os.path.join(save_dir, "round_{:d}.ckpt".format(round), "lm_model"))
 
         # Save spatial embedding.
-        torch.save(self.spatial_embedding.state_dict(), os.path.join(save_dir, "epoch_{:d}.ckpt".format(epoch), "sp_emb".format(epoch)))
+        torch.save(self.spatial_embedding.state_dict(), os.path.join(save_dir, "round_{:d}.ckpt".format(round), "sp_emb".format(round)))
 
         # Save visual embedding.
-        self.visual_embedding.image_model.save_pretrained(os.path.join(save_dir, "epoch_{:d}.ckpt".format(epoch), "vm_model"))
-        self.visual_embedding.feature_extractor.save_pretrained(os.path.join(save_dir, "epoch_{:d}.ckpt".format(epoch), "vm_model"))
-        torch.save(self.visual_embedding.visual_emb_matcher.state_dict(), os.path.join(save_dir, "epoch_{:d}.ckpt".format(epoch), "vm_model", "emb_mlp"))
+        self.visual_embedding.image_model.save_pretrained(os.path.join(save_dir, "round_{:d}.ckpt".format(round), "vm_model"))
+        self.visual_embedding.feature_extractor.save_pretrained(os.path.join(save_dir, "round_{:d}.ckpt".format(round), "vm_model"))
+        torch.save(self.visual_embedding.visual_emb_matcher.state_dict(), os.path.join(save_dir, "round_{:d}.ckpt".format(round), "vm_model", "emb_mlp"))
 
         # Save config
-        save_yaml(os.path.join(save_dir, "epoch_{:d}.ckpt".format(epoch), "experiment_config.yml"), kwargs)
-        shutil.copy(os.path.join(save_dir, "epoch_{:d}.ckpt".format(epoch), "lm_model", "config.json"), os.path.join(save_dir, "epoch_{:d}.ckpt".format(epoch), "config.json"))
+        save_yaml(os.path.join(save_dir, "round_{:d}.ckpt".format(round), "experiment_config.yml"), kwargs)
+        shutil.copy(os.path.join(save_dir, "round_{:d}.ckpt".format(round), "lm_model", "config.json"), os.path.join(save_dir, "round_{:d}.ckpt".format(round), "config.json"))
 
         if update_best:
             # Save language part.
@@ -140,7 +140,7 @@ class ProxyVT5:
             self.tokenizer.save_pretrained(os.path.join(save_dir, "best.ckpt", "lm_model"))
 
             # Save spatial embedding.
-            torch.save(self.spatial_embedding.state_dict(), os.path.join(save_dir, "best.ckpt", "sp_emb".format(epoch)))
+            torch.save(self.spatial_embedding.state_dict(), os.path.join(save_dir, "best.ckpt", "sp_emb"))
 
             # Save visual embedding.
             self.visual_embedding.image_model.save_pretrained(os.path.join(save_dir, "best.ckpt", "vm_model"))
