@@ -117,7 +117,7 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, cl
     # if fl_config["log_path"] is not None:
     if config.flower:
         # log_communication(federated_round=fl_config["current_round"], sender=client_id, receiver=-1, data=parameters, log_location=fl_config["log_path"])
-        log_communication(federated_round=fl_config["current_round"], sender=client_id, receiver=-1, data=parameters, log_location=logger.comms_log_file)
+        log_communication(federated_round=fl_config.current_round, sender=client_id, receiver=-1, data=parameters, log_location=logger.comms_log_file)
 
     # Send the weights to the server
     return upd_weights
@@ -144,7 +144,7 @@ class FlowerClient(fl.client.NumPyClient):
     def set_parameters(self, model, parameters, config):
         params_dict = zip(model.model.state_dict().keys(), parameters)
         state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
-        log_communication(federated_round=config["current_round"], sender=-1, receiver=self.client_id, data=parameters, log_location=self.logger.comms_log_file)
+        log_communication(federated_round=config.current_round, sender=-1, receiver=self.client_id, data=parameters, log_location=self.logger.comms_log_file)
 
         model.model.load_state_dict(state_dict, strict=True)
 
@@ -154,7 +154,7 @@ class FlowerClient(fl.client.NumPyClient):
         accuracy, anls, _, _ = evaluate(self.valloader, self.model, self.evaluator, config)  # data_loader, model, evaluator, **kwargs
         is_updated = self.evaluator.update_global_metrics(accuracy, anls, 0)
         self.logger.log_val_metrics(accuracy, anls, update_best=is_updated)
-        save_model(model, config["current_round"], update_best=is_updated, kwargs=args)
+        save_model(model, config.current_round, update_best=is_updated, kwargs=config)
 
         return float(0), len(self.valloader), {"accuracy": float(accuracy), "anls": anls}
 
@@ -186,6 +186,18 @@ def client_fn(client_id):
     evaluator = Evaluator(case_sensitive=False)
     logger = Logger(config=config)
     return FlowerClient(model, train_data_loaders, val_data_loader, optimizer, lr_scheduler, evaluator, logger, config, client_id)
+
+
+def get_config_fn():
+    """Return a function which returns custom configuration."""
+
+    def custom_config(server_round: int):
+        """Return evaluate configuration dict for each round."""
+        warnings.warn(str(config))
+        config.current_round = server_round
+        return config
+
+    return custom_config
 
 
 def fit_config(server_round: int):
@@ -237,8 +249,7 @@ if __name__ == '__main__':
         # fit_metrics_aggregation_fn=weighted_average,  # <-- pass the metric aggregation function
         evaluate_metrics_aggregation_fn=weighted_average,  # <-- pass the metric aggregation function
         initial_parameters=fl.common.ndarrays_to_parameters(params),
-        # on_fit_config_fn=get_on_fit_config_fn(config.log_path),
-        on_fit_config_fn=fit_config,  # Log path hardcoded according to /save dir
+        on_fit_config_fn=get_config_fn(),  # Log path hardcoded according to /save dir
         # evaluate_fn=fl_centralized_evaluation,  # Pass the centralized evaluation function
         on_evaluate_config_fn=evaluate_config,
         # on_evaluate_config_fn=get_on_eval_config_fn(config),
