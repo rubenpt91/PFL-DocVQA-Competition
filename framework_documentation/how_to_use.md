@@ -12,6 +12,7 @@
       3. [Federated Learning parameters](#federated-learning-parameters)
       4. [Differential Privacy Parameters](#differential-privacy-parameters)
 5. [Project Structure](#project-structure)
+6. [FL Flower Simulator](#fl-flower-simulator)
 
 ## Set-up environment
 
@@ -137,6 +138,26 @@ Below, we show a descriptive list of the possible input arguments that can be us
 | providers_per_fl_round | Number of groups (providers) sampled in each FL Round. | Integer (50)     |
 | sensitivity            | Differential Privacy Noise sensitivity.                | Float   (0.5)    |
 | noise_multiplier       | Differential Privacy noise multiplier.                 | Float   (1.182)  |
+
+
+## Monitor your training
+
+By default, the framework will log all the training and evaluation process in [Weights and Biases (wandb)](https://wandb.ai/home). <br>
+
+<div style="text-align: justify;">
+The first time you run the framework, wandb will ask you to provide your wandb account information.
+You can decide either to create a new account, provide a <a href="https://wandb.ai/authorize">authorization token</a> from an already existing account, or do not visualize the logging process.
+The two first options are straightforward and wandb should properly guide you.
+In the case you don't want to visualize the results you might get an error when running the experiments.
+To prevent this, you need to disable wandb by typing:
+</div>
+
+```bash
+$ (pfl_docvqa) export WANDB_MODE="offline"
+```
+
+Moreover, Flower integrates their own monitoring system tools with Grafana and Prometheus.
+You can check how to do it in the [Flower Monitor Simulation](https://flower.dev/docs/monitor-simulation.html) documentation.
 
 ## Project structure
 
