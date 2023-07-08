@@ -1,6 +1,6 @@
 save_dir: save/
 model_name: VT5
-model_weights: /SSD2/PFL-DocVQA Checkpoints/vt5_mp-docvqa.ckpt
+model_weights: /SSD2/PFL-DocVQA Checkpoints/vt5_mp-docvqa.ckpt  # /data/shared/PFL-DocVQA/Checkpoints/vt5_mp-docvqa.ckpt
 max_input_tokens: 512
 device: cuda
 seed: 42
