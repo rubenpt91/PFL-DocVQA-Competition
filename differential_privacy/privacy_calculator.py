@@ -272,15 +272,15 @@ def compute_epsilon(sigma, sampling_prob_1, global_iterations, delta, verbose=Fa
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='MP-DocVQA framework')
+    parser = argparse.ArgumentParser(description='PFL-DocVQA Baseline: Privacy calculator.')
 
     # Required
     parser.add_argument('--noise_multiplier', type=float, required=True, help='Noise multiplier.')  # {1: 1.145, 4: 0.637, 8: 0.468}
     parser.add_argument('--sample_clients', type=int, required=True, help='Noise multiplier.')  # 2
-    parser.add_argument('--num_rounds', type=int, help='Number of FL rounds.')
+    parser.add_argument('--num_rounds', type=int, required=True, help='Number of FL rounds.')  # 5
     # parser.add_argument('--iterations_per_fl_round', type=int, help='Number of iterations per provider during each FL round.')
-    parser.add_argument('--providers_per_fl_round', type=int, help='Number of groups (providers) sampled in each FL Round.')
-    parser.add_argument('--sensitivity', type=float, help='Upper bound of the contribution per group (provider).')
+    parser.add_argument('--providers_per_fl_round', type=int, required=True, help='Number of groups (providers) sampled in each FL Round.')  # 50
+    parser.add_argument('--sensitivity', type=float, required=True, help='Upper bound of the contribution per group (provider).')  # 0.5
 
     return parser.parse_args()
 
@@ -292,12 +292,11 @@ if __name__ == '__main__':
 
     total_clients = 10
     min_providers = 400
-    sampling_prob = (args.sample_clients / total_clients) * (args.providers_per_fl_round / min_providers)
+
     # Sampling prob: probability of selecting a client * probability of selecting a batch of groups, ie: K/N * |M|/min_k(|G_k|), where K is the number of clients selected at each federated round, N is the total number of clients, |M| is the batch size and min_k(|G_k|) is the minimum number of groups over all the clients.
-    # Number of federated rounds iterations
-    T_cl = 5
+    sampling_prob = (args.sample_clients / total_clients) * (args.providers_per_fl_round / min_providers)
     # Local federated rounds iterations: here you put the worst case number of local iterations per client: reinitialization iter * batch iter * outer iter.
     #T_l = 100000
     DELTA = 10 ** -5  # DP parameter; we fix delta and compute the minimum epsilon
 
-    print(compute_epsilon(args.noise_multiplier, sampling_prob, T_cl, DELTA))
+    print(compute_epsilon(args.noise_multiplier, sampling_prob, args.num_rounds, DELTA))

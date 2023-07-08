@@ -41,12 +41,12 @@ class Logger(metaclass=Singleton):
 
         if config.use_dp:
             tags.append('DP')
-
+            sampling_prob = (config.fl_params.sample_clients / config.fl_params.total_clients) * (config.dp_params.providers_per_fl_round / 400)
             log_config.update({
                 'DP': True,
                 'DP Sensitivity': config.dp_params.sensitivity,
                 'Noise Multiplier': config.dp_params.noise_multiplier,
-                # 'Client sampling prob.': config.dp_params.client_sampling_probability,
+                'Client sampling prob.': sampling_prob,
                 'Providers per FL Round': config.dp_params.providers_per_fl_round
             })
 

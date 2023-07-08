@@ -1,15 +1,13 @@
 save_dir: save/
 model_name: VT5
-# model_weights: t5-base
-# model_weights: weights/t5_oracle_mp-docvqa__best.ckpt
-model_weights: rubentito/t5-base-mpdocvqa
+model_weights: /SSD2/PFL-DocVQA Checkpoints/vt5_mp-docvqa.ckpt
 max_input_tokens: 512
 device: cuda
 seed: 42
 
 visual_module:
-  model: 'dit'  # 'vit' / 'dit'
-  model_weights: 'microsoft/dit-base-finetuned-rvlcdip'  # 'google/vit-base-patch16-224-in21k' / 'microsoft/dit-base-finetuned-rvlcdip'
+  model: dit
+  model_weights: microsoft/dit-base-finetuned-rvlcdip
   finetune: False
 
 training_parameters:
@@ -27,4 +25,3 @@ dp_parameters:
   providers_per_fl_round: 50
   sensitivity: 0.5  # [0.5, 1.0, 1.5, 2.0, 2.5, 3.0]
   noise_multiplier: 1.182
-  # client_sampling_probability: 0.1960

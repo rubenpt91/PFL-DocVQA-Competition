@@ -214,11 +214,13 @@ if __name__ == '__main__':
     strategy = fl.server.strategy.FedAvg(
         # fraction_fit=config.dp_params.client_sampling_probability,  # Sample 100% of available clients for training
         fraction_fit=config.fl_params.sample_clients/config.fl_params.total_clients,
-        fraction_evaluate=config.fl_params.sample_clients/config.fl_params.total_clients,  # Sample N of available clients for evaluation
+        # fraction_evaluate=config.fl_params.sample_clients/config.fl_params.total_clients,  # Sample N of available clients for evaluation
+        fraction_evaluate=0.1,  # Sample only 1 client for evaluation
         min_fit_clients=config.fl_params.sample_clients,  # Never sample less than N clients for training
-        min_evaluate_clients=config.fl_params.sample_clients,  # Never sample less than N clients for evaluation
+        # min_evaluate_clients=config.fl_params.sample_clients,  # Never sample less than N clients for evaluation
+        min_evaluate_clients=1,  # Sample only 1 client for evaluation.
         min_available_clients=config.fl_params.sample_clients,  # Wait until N clients are available
-        # fit_metrics_aggregation_fn=weighted_average,  # <-- pass the metric aggregation function
+        fit_metrics_aggregation_fn=weighted_average,  # <-- pass the metric aggregation function
         evaluate_metrics_aggregation_fn=weighted_average,  # <-- pass the metric aggregation function
         initial_parameters=fl.common.ndarrays_to_parameters(params),
         on_fit_config_fn=get_config_fn(),  # Log path hardcoded according to /save dir

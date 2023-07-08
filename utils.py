@@ -6,7 +6,7 @@ import torch
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='MP-DocVQA framework')
+    parser = argparse.ArgumentParser(description='PFL-DocVQA Baseline')
 
     # Required
     parser.add_argument('-m', '--model', type=str, required=True, help='Path to yml file with model configuration.')
