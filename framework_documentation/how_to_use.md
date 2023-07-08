@@ -2,8 +2,9 @@
 
 1. [Set-up environment](#set-up-environment)
 2. [Download Dataset](#download-dataset)
-3. [Train and evaluate](#train-and-evaluate)
-4. [Configuration files and input arguments](#configuration-files-and-input-arguments)
+3. [Download Pretrained Weights](#download-pretrained_weights)
+4. [Train and evaluate](#train-and-evaluate)
+5. [Configuration files and input arguments](#configuration-files-and-input-arguments)
    1. [Input Arguments](#input-arguments)
    2. [Datasets configuration files](#datasets-configuration-files)
    3. [Models configuration files](#models-configuration-files)
@@ -11,8 +12,8 @@
       2. [Training parameters](#training-parameters)
       3. [Federated Learning parameters](#federated-learning-parameters)
       4. [Differential Privacy Parameters](#differential-privacy-parameters)
-5. [Monitor experiments](#monitor-experiments)
-6. [Project Structure](#project-structure)
+6. [Monitor experiments](#monitor-experiments)
+7. [Project Structure](#project-structure)
 
 ## Set-up environment
 
@@ -37,12 +38,17 @@ $ (pfl_dovqa) pip install ray==1.11
 
 ## Download dataset
 
-Download the dataset from the [ELSA Benchmarks Platform](https://benchmarks.elsa-ai.eu/?ch=2&com=downloads).
-Then, modify in the dataset configuration file `configs/datasets/PFL-DocVQA.yml` the following keys:
-* **imdb_dir**: Path to the imdb directory with all train and validation clients.
-* **images_dir**: Path to the dataset images.
-* **provider_docs**: Path to _data_points.json_.
+1. Download the dataset from the [ELSA Benchmarks Platform](https://benchmarks.elsa-ai.eu/?ch=2&com=downloads).
+2. Modify in the dataset configuration file `configs/datasets/PFL-DocVQA.yml` the following keys:
+    * **imdb_dir**: Path to the imdb directory with all train and validation clients.
+    * **images_dir**: Path to the dataset images.
+    * **provider_docs**: Path to _data_points.json_.
 
+## Download pretrained weights
+
+1. Download the [pretrained weights](https://datasets.cvc.uab.es/elsa/PFL-DocVQA/vt5_mp-docvqa.ckpt.zip) on SP-DocVQA.
+2. Unzip the weights `unzip vt5_mp-docvqa.ckpt.zip`.
+3. Change the `model_weights` path in `configs/models/VT5.yml` to point to your local ''_.ckpt_'' path.
 
 ## Train and evaluate
 

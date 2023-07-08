@@ -25,4 +25,4 @@ fl_parameters:
 dp_parameters:
   providers_per_fl_round: 50
   sensitivity: 0.5  # [0.5, 1.0, 1.5, 2.0, 2.5, 3.0]
-  noise_multiplier: 1.182
+  noise_multiplier: 1.145  # {1: 1.145, 4: 0.637, 8: 0.468}
