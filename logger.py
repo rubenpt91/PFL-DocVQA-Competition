@@ -1,4 +1,6 @@
 import os, socket, datetime
+
+import torch
 import wandb as wb
 
 from utils import Singleton
@@ -51,6 +53,8 @@ class Logger(metaclass=Singleton):
             })
 
         self.logger = wb.init(project="PFL-DocVQA-Competition", name=self.experiment_name, dir=self.log_folder, tags=tags, config=log_config)
+        self.logger.define_metric("Train/FL Round *", step_metric="fl_round")
+        self.logger.define_metric("Val/FL Round *", step_metric="fl_round")
         self._print_config(log_config)
 
         self.current_epoch = 0
@@ -64,14 +68,17 @@ class Logger(metaclass=Singleton):
         print("}\n")
 
     def log_model_parameters(self, model):
-        total_params = sum(p.numel() for p in model.model.parameters())
-        trainable_params = sum(p.numel() for p in model.model.parameters() if p.requires_grad)
+        total_params = 0
+        trainable_params = 0
+        for attr in dir(model):
+            if isinstance(getattr(model, attr), torch.nn.Module):
+                total_params += sum(p.numel() for p in getattr(model, attr).parameters())
+                trainable_params += sum(p.numel() for p in getattr(model, attr).parameters() if p.requires_grad)
 
-        if self.logger:
-            self.logger.config.update({
-                'Model Params': int(total_params / 1e6),  # In millions
-                'Model Trainable Params': int(trainable_params / 1e6)  # In millions
-            })
+        self.logger.config.update({
+            'Model Params': int(total_params / 1e6),  # In millions
+            'Model Trainable Params': int(trainable_params / 1e6)  # In millions
+        })
 
         print("Model parameters: {:d} - Trainable: {:d} ({:2.2f}%)".format(
             total_params, trainable_params, trainable_params / total_params * 100))
@@ -81,9 +88,9 @@ class Logger(metaclass=Singleton):
 
         if self.logger:
             self.logger.log({
-                'Val/Epoch Accuracy': accuracy,
-                'Val/Epoch ANLS': anls,
-            # }, step=self.current_epoch*self.len_dataset + self.len_dataset)
+                'Val/FL Round Accuracy': accuracy,
+                'Val/FL Round ANLS': anls,
+                'fl_round': self.current_epoch
             })
 
             if update_best:

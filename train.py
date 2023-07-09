@@ -37,6 +37,7 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, cl
         raise ValueError("Non private training should only use one data loader.")
 
     total_training_steps = sum([len(data_loader) for data_loader in data_loaders]) * config.fl_params.iterations_per_fl_round
+    total_training_samples = sum([len(data_loader.dataset) for data_loader in data_loaders]) * config.fl_params.iterations_per_fl_round
     pbar = tqdm(total=total_training_steps)
 
     total_loss = 0
@@ -115,12 +116,13 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, cl
     pbar.close()
 
     fl_round_log_dict = {
-        'Train/FL Round loss': total_loss / total_training_steps,
-        'Train/FL Round Accuracy': fl_round_acc / total_training_steps,
-        'Train/FL Round ANLS': fl_round_anls / total_training_steps,
+        'Train/FL Round loss': total_loss / total_training_samples,
+        'Train/FL Round Accuracy': fl_round_acc / total_training_samples,
+        'Train/FL Round ANLS': fl_round_anls / total_training_samples,
+        'fl_round': logger.current_epoch
     }
 
-    logger.logger.log(fl_round_log_dict, step=logger.current_epoch)
+    logger.logger.log(fl_round_log_dict)
 
     # if fl_config["log_path"] is not None:
     if config.flower:
