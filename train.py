@@ -39,9 +39,11 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, cl
     total_training_steps = sum([len(data_loader) for data_loader in data_loaders]) * config.fl_params.iterations_per_fl_round
     pbar = tqdm(total=total_training_steps)
 
-    # total_loss = 0
-    for provider_dataloader in data_loaders:
+    total_loss = 0
+    fl_round_acc = 0
+    fl_round_anls = 0
 
+    for provider_dataloader in data_loaders:
         # Set model weights to state of beginning of federated round
         state_dict = OrderedDict({k: v for k, v in zip(param_keys, parameters)})
         model.model.load_state_dict(state_dict, strict=True)
@@ -63,13 +65,14 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, cl
 
                 metric = evaluator.get_metrics(gt_answers, pred_answers)
 
-                batch_acc = np.mean(metric['accuracy'])
-                batch_anls = np.mean(metric['anls'])
+                total_loss += outputs.loss.item()
+                fl_round_acc += np.sum(metric['accuracy'])
+                fl_round_anls += np.sum(metric['anls'])
 
                 log_dict = {
                     'Train/Batch loss': outputs.loss.item(),
-                    'Train/Batch Accuracy': batch_acc,
-                    'Train/Batch ANLS': batch_anls,
+                    'Train/Batch Accuracy': np.mean(metric['accuracy']),
+                    'Train/Batch ANLS': np.mean(metric['anls']),
                     'lr': optimizer.param_groups[0]['lr']
                 }
 
@@ -111,7 +114,13 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, cl
 
     pbar.close()
 
-    logger.logger.log(log_dict, step=logger.current_epoch * logger.len_dataset + batch_idx)
+    fl_round_log_dict = {
+        'Train/FL Round loss': total_loss / total_training_steps,
+        'Train/FL Round Accuracy': fl_round_acc / total_training_steps,
+        'Train/FL Round ANLS': fl_round_anls / total_training_steps,
+    }
+
+    logger.logger.log(fl_round_log_dict, step=logger.current_epoch)
 
     # if fl_config["log_path"] is not None:
     if config.flower:
