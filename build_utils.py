@@ -1,29 +1,31 @@
 
 import torch
-import transformers
-
 from transformers import get_scheduler
 
 
-def build_optimizer(model, length_train_loader, config):
+def build_optimizer(model, config):
     optimizer_class = getattr(torch.optim, 'AdamW')
     optimizer = optimizer_class(model.model.parameters(), lr=float(config.lr))
 
-    # optimizer_class = getattr(transformers, 'AdamW')
-    # optimizer = optimizer_class(model.model.parameters(), lr=float(config.lr))
-    # num_training_steps = config.train_epochs * length_train_loader
+    return optimizer
 
-    # if config.flower and config.flower and config.fl_params.num_rounds:
-    #     num_training_steps = num_training_steps * config.fl_params.num_rounds * config.fl_params.iterations_per_fl_round
 
-    # lr scheduler disabled due to malfunctioning in FL setup.
-    # lr_scheduler = get_scheduler(
-    #     name="linear", optimizer=optimizer, num_warmup_steps=config.warmup_iterations, num_training_steps=num_training_steps
-    # )
+"""
+def build_optimizer(model, length_train_loader, config):
+    optimizer_class = getattr(transformers, 'AdamW')
+    optimizer = optimizer_class(model.model.parameters(), lr=float(config.lr))
+    num_training_steps = config.train_epochs * length_train_loader
 
-    # return optimizer, lr_scheduler
-    return optimizer, None
+    if config.flower and config.fl_params.num_rounds:
+        num_training_steps = num_training_steps * config.fl_params.num_rounds * config.fl_params.iterations_per_fl_round
 
+    lr scheduler disabled due to malfunctioning in FL setup.
+    lr_scheduler = get_scheduler(
+        name="linear", optimizer=optimizer, num_warmup_steps=config.warmup_iterations, num_training_steps=num_training_steps
+    )
+
+    return optimizer, lr_scheduler
+"""
 
 def build_model(config):
 

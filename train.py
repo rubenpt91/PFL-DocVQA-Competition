@@ -23,7 +23,8 @@ from utils_parallel import get_parameters_from_model, set_parameters_model, weig
 from collections import OrderedDict
 
 
-def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, client_id, fl_config):
+# def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, client_id, fl_config):
+def fl_train(data_loaders, model, optimizer, evaluator, logger, client_id, fl_config):
     """
     Trains and returns the updated weights.
     """
@@ -49,6 +50,10 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, cl
         state_dict = OrderedDict({k: v for k, v in zip(param_keys, parameters)})
         model.model.load_state_dict(state_dict, strict=True)
         model.model.train()
+
+        # Reset the optimizer
+        if config.use_dp:
+            optimizer = build_optimizer(model, config)
 
         # Perform N provider iterations (each provider has their own dataloader in the non-private case)
         for iter in range(config.fl_params.iterations_per_fl_round):
@@ -134,12 +139,13 @@ def fl_train(data_loaders, model, optimizer, lr_scheduler, evaluator, logger, cl
 
 
 class FlowerClient(fl.client.NumPyClient):
-    def __init__(self, model, trainloader, valloader, optimizer, lr_scheduler, evaluator, logger, config, client_id):
+    # def __init__(self, model, trainloader, valloader, optimizer, lr_scheduler, evaluator, logger, config, client_id):
+    def __init__(self, model, trainloader, valloader, optimizer, evaluator, logger, config, client_id):
         self.model = model
         self.trainloader = trainloader
         self.valloader = valloader
         self.optimizer = optimizer
-        self.lr_scheduler = lr_scheduler
+        # self.lr_scheduler = lr_scheduler
         self.evaluator = evaluator
         self.logger = logger
         self.logger.log_model_parameters(self.model)
@@ -148,7 +154,8 @@ class FlowerClient(fl.client.NumPyClient):
 
     def fit(self, parameters, config):
         self.set_parameters(self.model, parameters, config)
-        updated_weigths = fl_train(self.trainloader, self.model, self.optimizer, self.lr_scheduler, self.evaluator, self.logger, self.client_id, config)
+        # updated_weigths = fl_train(self.trainloader, self.model, self.optimizer, self.lr_scheduler, self.evaluator, self.logger, self.client_id, config)
+        updated_weigths = fl_train(self.trainloader, self.model, self.optimizer, self.evaluator, self.logger, self.client_id, config)
         return updated_weigths, 1, {}  # TODO 1 ==> Number of selected clients.
 
     def set_parameters(self, model, parameters, config):
@@ -191,11 +198,12 @@ def client_fn(client_id):
     val_data_loader = DataLoader(val_dataset, batch_size=config.batch_size, shuffle=False, collate_fn=collate_fn)
 
     # lr_scheduler disabled due to malfunction in FL setup.
-    optimizer, lr_scheduler = build_optimizer(model, length_train_loader=total_training_steps, config=config)
+    # optimizer, lr_scheduler = build_optimizer(model, length_train_loader=total_training_steps, config=config)
+    optimizer = build_optimizer(model, config=config)
 
     evaluator = Evaluator(case_sensitive=False)
     logger = Logger(config=config)
-    return FlowerClient(model, train_data_loaders, val_data_loader, optimizer, lr_scheduler, evaluator, logger, config, client_id)
+    return FlowerClient(model, train_data_loaders, val_data_loader, optimizer, evaluator, logger, config, client_id)
 
 
 def get_config_fn():
