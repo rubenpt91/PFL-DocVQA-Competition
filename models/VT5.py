@@ -8,9 +8,10 @@ from transformers import T5Tokenizer, T5ForConditionalGeneration
 from models._modules import CustomT5Config, SpatialEmbeddings, VisualEmbeddings
 import models._model_utils as model_utils
 import transformers.models.t5.modeling_t5
+from transformers import T5Tokenizer, T5ForConditionalGeneration
 
 
-class ProxyVT5:
+class VT5(T5ForConditionalGeneration):
     def __init__(self, config):
         self.max_input_tokens = getattr(config, 'max_input_tokens', 512)
 
