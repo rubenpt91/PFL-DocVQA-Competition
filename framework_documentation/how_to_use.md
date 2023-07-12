@@ -33,7 +33,7 @@ $ conda activate pfl_docvqa
 Then, you need to manually install Ray library (due to some incompatibility issues, it does not allow to install it with the rest of the packages).
 
 ```bash
-$ (pfl_dovqa) pip install ray==1.11
+$ (pfl_docvqa) pip install ray==1.11
 ```
 
 ## Download dataset
@@ -56,14 +56,14 @@ To use the framework you only need to call the `train.py` or `eval.py` scripts w
 The framework is not prepared to performed centralized training. Therefore, you always must specify `--flower` flag. For example:
 
 ```bash
-$ (pfl_dovqa) python train.py --dataset PFL-DocVQA --model VT5 --flower
+$ (pfl_docvqa) python train.py --dataset PFL-DocVQA --model VT5 --flower
 ```
 
 The name of the dataset and the model **must** match with the name of the configuration under the `configs/dataset` and `configs/models` respectively. This allows having different configuration files for the same dataset or model. <br>
 In addition, to apply or Differential Privacy, you just need to specify ```--use_dp```.
 
 ```bash
-$ (pfl_dovqa) python train.py --dataset PFL-DocVQA --model VT5 --flower --use_dp
+$ (pfl_docvqa) python train.py --dataset PFL-DocVQA --model VT5 --flower --use_dp
 ```
 
 Below, we show a descriptive list of the possible input arguments that can be used.
