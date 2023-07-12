@@ -1,5 +1,9 @@
+import argparse
 import os, shutil, random
 import numpy as np
+from collections import OrderedDict
+
+import build_utils
 from utils import save_yaml
 
 import torch
@@ -8,7 +12,6 @@ from transformers import T5Tokenizer, T5ForConditionalGeneration
 from models._modules import CustomT5Config, SpatialEmbeddings, VisualEmbeddings
 import models._model_utils as model_utils
 import transformers.models.t5.modeling_t5
-
 
 class ProxyVT5:
     def __init__(self, config):
@@ -115,6 +118,19 @@ class ProxyVT5:
         pred_answers_conf = model_utils.get_generative_confidence(output)
 
         return pred_answers, pred_answers_conf
+
+    def set_model_parameters(self, state_dict):
+        self.model.load_state_dict(state_dict['lm_backbone'], strict=True)
+        self.visual_embedding.load_state_dict(state_dict['visual_embedding'], strict=True)
+        self.spatial_embedding.load_state_dict(state_dict['spatial_embedding'], strict=True)
+
+    def get_model_parameters(self):
+
+        return {
+            'lm_backbone': self.model.state_dict(),
+            'visual_embedding': self.visual_embedding.state_dict(),
+            'spatial_embedding': self.spatial_embedding.state_dict()
+        }
 
     def save_model(self, save_dir, round, kwargs, update_best):
 

@@ -3,13 +3,26 @@ from collections import OrderedDict
 
 
 def get_parameters_from_model(model):
-    return [val.cpu().numpy() for _, val in model.model.state_dict().items()]
+
+    get_params_func = getattr(model, "get_model_parameters", None)
+    if callable(get_params_func):
+        params = model.get_model_parameters()
+
+    else:
+        params = [val.cpu().numpy() for _, val in model.model.state_dict().items()]
+
+    return params
 
 
 def set_parameters_model(model, parameters):
-    params_dict = zip(model.model.state_dict().keys(), parameters)
-    state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
-    model.model.load_state_dict(state_dict, strict=True)
+    set_params_func = getattr(model, "set_model_parameters", None)
+    if callable(set_params_func):
+        model.set_model_parameters(parameters)
+
+    else:
+        params_dict = zip(model.model.state_dict().keys(), parameters)
+        state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
+        model.model.load_state_dict(state_dict, strict=True)
 
 
 def weighted_average(metrics_dict):
