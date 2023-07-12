@@ -5,21 +5,34 @@ from utils import save_yaml
 import torch
 import torch.nn as nn
 from transformers import T5Tokenizer, T5ForConditionalGeneration
+from transformers import PreTrainedModel
 from models._modules import CustomT5Config, SpatialEmbeddings, VisualEmbeddings
 import models._model_utils as model_utils
 import transformers.models.t5.modeling_t5
-from transformers import T5Tokenizer, T5ForConditionalGeneration
 
 
-class VT5(T5ForConditionalGeneration):
+# class HF_VT5(PreTrainedModel):
+class HF_VT5(T5ForConditionalGeneration):
+
+    def __init__(self, t5_config):
+        super().__init__(t5_config)
+
+        self.language_backbone = T5ForConditionalGeneration
+        self.spatial_embedding = SpatialEmbeddings(t5_config)
+        self.visual_embedding = VisualEmbeddings(t5_config)
+
+
+class VT5:
     def __init__(self, config):
         self.max_input_tokens = getattr(config, 'max_input_tokens', 512)
 
         t5_config = CustomT5Config.from_pretrained(config.model_weights)
         t5_config.visual_module_config = config.visual_module
-        self.spatial_embedding = SpatialEmbeddings(t5_config).to(config.device)
-        self.visual_embedding = VisualEmbeddings(t5_config).to(config.device)
+
+        self.tokenizer = T5Tokenizer.from_pretrained('t5-base')
+        self.model = HF_VT5.from_pretrained('/SSD2/PFL-DocVQA Checkpoints/new_vt5-base.ckpt', config=t5_config)
         self.load_model(config.model_weights)
+        a = 0
 
     def prepare_inputs_for_vqa(self, question, words, boxes, images, answers=None):
         bs = len(words)
@@ -70,9 +83,9 @@ class VT5(T5ForConditionalGeneration):
         tensor_attention_mask = tensor_attention_mask.to(self.model.device)
 
         # Get semantic and spatial embeddings
-        semantic_embedding = self.model.shared(tensor_input_ids)
-        spatial_embedding = self.spatial_embedding(tensor_boxes)
-        visual_embedding, visual_emb_mask = self.visual_embedding(images)
+        semantic_embedding = self.model.language_backbone.shared(tensor_input_ids)
+        spatial_embedding = self.model.spatial_embedding(tensor_boxes)
+        visual_embedding, visual_emb_mask = self.model.visual_embedding(images)
 
         # input_embeds = semantic_embedding
         input_embeds = torch.add(semantic_embedding, spatial_embedding)
@@ -105,7 +118,7 @@ class VT5(T5ForConditionalGeneration):
         answers = batch['answers']
 
         input_embeds, attention_mask, labels = self.prepare_inputs_for_vqa(question, words, boxes, images, answers)
-        outputs = self.model(inputs_embeds=input_embeds, attention_mask=attention_mask, labels=labels)
+        outputs = self.model.language_backbone(inputs_embeds=input_embeds, attention_mask=attention_mask, labels=labels)
         pred_answers, pred_answers_conf = self.get_answer_from_model_output(input_embeds, attention_mask) if return_pred_answer else None
 
         return outputs, pred_answers, pred_answers_conf
@@ -152,21 +165,22 @@ class VT5(T5ForConditionalGeneration):
             shutil.copy(os.path.join(save_dir, "best.ckpt", "lm_model", "config.json"), os.path.join(save_dir, "best.ckpt", "config.json"))
             save_yaml(os.path.join(save_dir, "best.ckpt", "experiment_config.yml"), kwargs)
 
+
     def load_model(self, load_weights):
 
         # Load local weights
         if load_weights.endswith('.ckpt'):
             # Load language part.
             self.tokenizer = T5Tokenizer.from_pretrained(os.path.join(load_weights, "lm_model"))
-            self.model = T5ForConditionalGeneration.from_pretrained(os.path.join(load_weights, "lm_model"))
+            self.model.language_backbone = self.model.language_backbone.from_pretrained(os.path.join(load_weights, "lm_model"))
 
             # Load spatial embedding.
-            self.spatial_embedding.load_state_dict(torch.load(os.path.join(load_weights, "sp_emb")))
+            self.model.spatial_embedding.load_state_dict(torch.load(os.path.join(load_weights, "sp_emb")))
 
             # Load visual embedding.
-            self.visual_embedding.image_model.from_pretrained(os.path.join(load_weights, "vm_model"))
-            self.visual_embedding.feature_extractor.from_pretrained(os.path.join(load_weights, "vm_model"))
-            self.visual_embedding.visual_emb_matcher.load_state_dict(torch.load(os.path.join(load_weights, "vm_model", "emb_mlp")))
+            self.model.visual_embedding.image_model.from_pretrained(os.path.join(load_weights, "vm_model"))
+            self.model.visual_embedding.feature_extractor.from_pretrained(os.path.join(load_weights, "vm_model"))
+            self.model.visual_embedding.visual_emb_matcher.load_state_dict(torch.load(os.path.join(load_weights, "vm_model", "emb_mlp")))
 
         # Load weights directly from Huggingface
         else:
