@@ -5,7 +5,7 @@ from utils import save_yaml
 def save_model(model, epoch, kwargs, update_best=False):
     save_dir = os.path.join(kwargs.save_dir, 'checkpoints', "{:s}_{:s}".format(kwargs.model_name.lower(), kwargs.dataset_name.lower()))
 
-    if 'use_dp' in kwargs:
+    if getattr(kwargs, 'use_dp', False):
         save_dir += '_dp'
 
     # Models (VT5) that are not from Huggingface need to implement their own save_model function.
