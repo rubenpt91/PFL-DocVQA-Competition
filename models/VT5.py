@@ -12,12 +12,12 @@ import transformers.models.t5.modeling_t5
 
 
 # class HF_VT5(PreTrainedModel):
-class HF_VT5(T5ForConditionalGeneration):
+class HF_VT5(PreTrainedModel):
 
     def __init__(self, t5_config):
         super().__init__(t5_config)
 
-        self.language_backbone = T5ForConditionalGeneration
+        self.language_backbone = T5ForConditionalGeneration(t5_config)
         self.spatial_embedding = SpatialEmbeddings(t5_config)
         self.visual_embedding = VisualEmbeddings(t5_config)
 
@@ -29,9 +29,9 @@ class VT5:
         t5_config = CustomT5Config.from_pretrained(config.model_weights)
         t5_config.visual_module_config = config.visual_module
 
-        self.tokenizer = T5Tokenizer.from_pretrained('t5-base')
+        self.tokenizer = T5Tokenizer.from_pretrained(config.model_weights)
         self.model = HF_VT5.from_pretrained(config.model_weights, config=t5_config)
-        self.load_model(config.model_weights)
+        # self.load_model(config.model_weights)
 
     def prepare_inputs_for_vqa(self, question, words, boxes, images, answers=None):
         bs = len(words)
@@ -123,7 +123,7 @@ class VT5:
         return outputs, pred_answers, pred_answers_conf
 
     def get_answer_from_model_output(self, input_embeds, attention_mask):
-        output = self.model.generate(inputs_embeds=input_embeds, attention_mask=attention_mask, output_scores=True, return_dict_in_generate=True, output_attentions=True)
+        output = self.model.language_backbone.generate(inputs_embeds=input_embeds, attention_mask=attention_mask, output_scores=True, return_dict_in_generate=True, output_attentions=True)
         pred_answers = self.tokenizer.batch_decode(output['sequences'], skip_special_tokens=True)
         pred_answers_conf = model_utils.get_generative_confidence(output)
 
@@ -131,38 +131,39 @@ class VT5:
 
     def save_model(self, save_dir, round, kwargs, update_best):
 
+        pass
         # Save language part.
-        self.model.save_pretrained(os.path.join(save_dir, "round_{:d}.ckpt".format(round), "lm_model"))
-        self.tokenizer.save_pretrained(os.path.join(save_dir, "round_{:d}.ckpt".format(round), "lm_model"))
-
-        # Save spatial embedding.
-        torch.save(self.spatial_embedding.state_dict(), os.path.join(save_dir, "round_{:d}.ckpt".format(round), "sp_emb".format(round)))
-
-        # Save visual embedding.
-        self.visual_embedding.image_model.save_pretrained(os.path.join(save_dir, "round_{:d}.ckpt".format(round), "vm_model"))
-        self.visual_embedding.feature_extractor.save_pretrained(os.path.join(save_dir, "round_{:d}.ckpt".format(round), "vm_model"))
-        torch.save(self.visual_embedding.visual_emb_matcher.state_dict(), os.path.join(save_dir, "round_{:d}.ckpt".format(round), "vm_model", "emb_mlp"))
-
-        # Save config
-        save_yaml(os.path.join(save_dir, "round_{:d}.ckpt".format(round), "experiment_config.yml"), kwargs)
-        shutil.copy(os.path.join(save_dir, "round_{:d}.ckpt".format(round), "lm_model", "config.json"), os.path.join(save_dir, "round_{:d}.ckpt".format(round), "config.json"))
-
-        if update_best:
-            # Save language part.
-            self.model.save_pretrained(os.path.join(save_dir, "best.ckpt", "lm_model"))
-            self.tokenizer.save_pretrained(os.path.join(save_dir, "best.ckpt", "lm_model"))
-
-            # Save spatial embedding.
-            torch.save(self.spatial_embedding.state_dict(), os.path.join(save_dir, "best.ckpt", "sp_emb"))
-
-            # Save visual embedding.
-            self.visual_embedding.image_model.save_pretrained(os.path.join(save_dir, "best.ckpt", "vm_model"))
-            self.visual_embedding.feature_extractor.save_pretrained(os.path.join(save_dir, "best.ckpt", "vm_model"))
-            torch.save(self.visual_embedding.visual_emb_matcher.state_dict(), os.path.join(save_dir, "best.ckpt", "vm_model", "emb_mlp"))
-
-            # Save config
-            shutil.copy(os.path.join(save_dir, "best.ckpt", "lm_model", "config.json"), os.path.join(save_dir, "best.ckpt", "config.json"))
-            save_yaml(os.path.join(save_dir, "best.ckpt", "experiment_config.yml"), kwargs)
+        # self.model.save_pretrained(os.path.join(save_dir, "round_{:d}.ckpt".format(round), "lm_model"))
+        # self.tokenizer.save_pretrained(os.path.join(save_dir, "round_{:d}.ckpt".format(round), "lm_model"))
+        #
+        # # Save spatial embedding.
+        # torch.save(self.spatial_embedding.state_dict(), os.path.join(save_dir, "round_{:d}.ckpt".format(round), "sp_emb".format(round)))
+        #
+        # # Save visual embedding.
+        # self.visual_embedding.image_model.save_pretrained(os.path.join(save_dir, "round_{:d}.ckpt".format(round), "vm_model"))
+        # self.visual_embedding.feature_extractor.save_pretrained(os.path.join(save_dir, "round_{:d}.ckpt".format(round), "vm_model"))
+        # torch.save(self.visual_embedding.visual_emb_matcher.state_dict(), os.path.join(save_dir, "round_{:d}.ckpt".format(round), "vm_model", "emb_mlp"))
+        #
+        # # Save config
+        # save_yaml(os.path.join(save_dir, "round_{:d}.ckpt".format(round), "experiment_config.yml"), kwargs)
+        # shutil.copy(os.path.join(save_dir, "round_{:d}.ckpt".format(round), "lm_model", "config.json"), os.path.join(save_dir, "round_{:d}.ckpt".format(round), "config.json"))
+        #
+        # if update_best:
+        #     # Save language part.
+        #     self.model.save_pretrained(os.path.join(save_dir, "best.ckpt", "lm_model"))
+        #     self.tokenizer.save_pretrained(os.path.join(save_dir, "best.ckpt", "lm_model"))
+        #
+        #     # Save spatial embedding.
+        #     torch.save(self.spatial_embedding.state_dict(), os.path.join(save_dir, "best.ckpt", "sp_emb"))
+        #
+        #     # Save visual embedding.
+        #     self.visual_embedding.image_model.save_pretrained(os.path.join(save_dir, "best.ckpt", "vm_model"))
+        #     self.visual_embedding.feature_extractor.save_pretrained(os.path.join(save_dir, "best.ckpt", "vm_model"))
+        #     torch.save(self.visual_embedding.visual_emb_matcher.state_dict(), os.path.join(save_dir, "best.ckpt", "vm_model", "emb_mlp"))
+        #
+        #     # Save config
+        #     shutil.copy(os.path.join(save_dir, "best.ckpt", "lm_model", "config.json"), os.path.join(save_dir, "best.ckpt", "config.json"))
+        #     save_yaml(os.path.join(save_dir, "best.ckpt", "experiment_config.yml"), kwargs)
 
 
     def load_model(self, load_weights):
