@@ -30,9 +30,8 @@ class VT5:
         t5_config.visual_module_config = config.visual_module
 
         self.tokenizer = T5Tokenizer.from_pretrained('t5-base')
-        self.model = HF_VT5.from_pretrained('/SSD2/PFL-DocVQA Checkpoints/new_vt5-base.ckpt', config=t5_config)
+        self.model = HF_VT5.from_pretrained(config.model_weights, config=t5_config)
         self.load_model(config.model_weights)
-        a = 0
 
     def prepare_inputs_for_vqa(self, question, words, boxes, images, answers=None):
         bs = len(words)
