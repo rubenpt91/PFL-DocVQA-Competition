@@ -32,7 +32,7 @@ def fl_train(data_loaders, model, optimizer, evaluator, logger, client_id, fl_co
     param_keys = list(model.model.state_dict().keys())
     parameters = copy.deepcopy(list(model.model.state_dict().values()))
 
-    keyed_parameters = {n: p.requires_grad for n, p in parameters}
+    keyed_parameters = {n: p.requires_grad for n, p in model.model.named_parameters()}
     frozen_parameters = [keyed_parameters[n] if n in keyed_parameters else True for n, p in model.model.state_dict().items()]
 
     logger.current_epoch += 1
