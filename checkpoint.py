@@ -8,7 +8,21 @@ def save_model(model, epoch, kwargs, update_best=False):
     if getattr(kwargs, 'use_dp', False):
         save_dir += '_dp'
 
+    model.model.save_pretrained(os.path.join(save_dir, "model__{:d}.ckpt".format(epoch)))
+
+    tokenizer = model.tokenizer if hasattr(model, 'tokenizer') else model.processor if hasattr(model, 'processor') else None
+    if tokenizer is not None:
+        tokenizer.save_pretrained(os.path.join(save_dir, "model__{:d}.ckpt".format(epoch)))
+
+    save_yaml(os.path.join(save_dir, "model__{:d}.ckpt".format(epoch), "experiment_config.yml"), kwargs)
+
+    if update_best:
+        model.model.save_pretrained(os.path.join(save_dir, "best.ckpt"))
+        tokenizer.save_pretrained(os.path.join(save_dir, "best.ckpt"))
+        save_yaml(os.path.join(save_dir, "best.ckpt", "experiment_config.yml"), kwargs)
+
     # Models (VT5) that are not from Huggingface need to implement their own save_model function.
+    """
     if hasattr(model, 'save_model'):
         model.save_model(save_dir, epoch, kwargs, update_best)
 
@@ -19,6 +33,7 @@ def save_model(model, epoch, kwargs, update_best=False):
         if tokenizer is not None:
             tokenizer.save_pretrained(os.path.join(save_dir, "model__{:d}.ckpt".format(epoch)))
 
+
         if hasattr(model.model, 'visual_embeddings'):
             model.model.visual_embeddings.feature_extractor.save_pretrained(os.path.join(save_dir, "model__{:d}.ckpt".format(epoch)))
 
@@ -28,6 +43,7 @@ def save_model(model, epoch, kwargs, update_best=False):
             model.model.save_pretrained(os.path.join(save_dir, "best.ckpt"))
             tokenizer.save_pretrained(os.path.join(save_dir, "best.ckpt"))
             save_yaml(os.path.join(save_dir, "best.ckpt", "experiment_config.yml"), kwargs)
+    """
 
 
 """
