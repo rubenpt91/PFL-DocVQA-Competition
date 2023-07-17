@@ -11,9 +11,6 @@ class Logger(metaclass=Singleton):
     def __init__(self, config):
 
         self.log_folder = config.save_dir
-
-        # experiment_date = datetime.datetime.now().strftime('%Y.%m.%d_%H.%M.%S')
-        # self.experiment_name = "{:s}__{:}".format(config.model_name, experiment_date)
         self.experiment_name = config.experiment_name
         self.comms_log_file = os.path.join(self.log_folder, "communication_logs", "{:}.csv".format(self.experiment_name))
 

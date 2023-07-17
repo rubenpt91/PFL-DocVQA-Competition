@@ -1,9 +1,7 @@
-import os, shutil, random
+import random
 import numpy as np
-from utils import save_yaml
 
 import torch
-import torch.nn as nn
 from transformers import T5Tokenizer, T5ForConditionalGeneration
 from transformers import PreTrainedModel
 from models._modules import CustomT5Config, SpatialEmbeddings, VisualEmbeddings
@@ -11,7 +9,6 @@ import models._model_utils as model_utils
 import transformers.models.t5.modeling_t5
 
 
-# class HF_VT5(PreTrainedModel):
 class HF_VT5(PreTrainedModel):
 
     def __init__(self, t5_config):
@@ -31,7 +28,6 @@ class VT5:
 
         self.tokenizer = T5Tokenizer.from_pretrained(config.model_weights)
         self.model = HF_VT5.from_pretrained(config.model_weights, config=t5_config)
-        # self.load_model(config.model_weights)
 
     def prepare_inputs_for_vqa(self, question, words, boxes, images, answers=None):
         bs = len(words)
@@ -69,13 +65,6 @@ class VT5:
             tensor_boxes[batch_idx, :len(batch_input_boxes[batch_idx])] = torch.from_numpy(batch_input_boxes[batch_idx][:len(batch_input_boxes[batch_idx])])
             tensor_attention_mask[batch_idx, :len(batch_input_ids[batch_idx])] = 1
 
-        """
-        context = [(' ').join(doc_words) for doc_words in words]
-        input_text = ["question: {:s}  context: {:s}".format(q, c) for q, c in zip(question, context)]
-        tokens = self.tokenizer(input_text, return_tensors='pt', padding=True, truncation=True).to(self.model.device)
-        input_embeds = self.model.shared(tokens.input_ids)
-        """
-
         # Send everything to GPU
         tensor_input_ids = tensor_input_ids.to(self.model.device)
         tensor_boxes = tensor_boxes.to(self.model.device)
@@ -90,13 +79,6 @@ class VT5:
         input_embeds = torch.add(semantic_embedding, spatial_embedding)
         input_embeds = torch.cat([input_embeds, visual_embedding], dim=1)  # Concatenate semantic + visual embeddings TODO: Provide visual bounding boxes.
         tensor_attention_mask = torch.cat([tensor_attention_mask, visual_emb_mask], dim=1)
-
-        """
-        context = [' '.join(doc_words) for doc_words in words]
-        input_text = ["question: {:s}  context: {:s}".format(q, c) for q, c in zip(question, context)]
-        tokens = self.tokenizer(input_text, return_tensors='pt', padding=True, truncation=True).to(self.model.device)
-        x = self.model.shared(tokens.input_ids)
-        """
 
         # Tokenize answers
         if answers is not None:

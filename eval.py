@@ -1,4 +1,4 @@
-import os, time, datetime
+import os, time
 from tqdm import tqdm
 
 import numpy as np
@@ -87,7 +87,6 @@ def main_eval(config):
 
     evaluator = Evaluator(case_sensitive=False)
     accuracy_list, anls_list, pred_answers, scores_by_samples = evaluate(val_data_loader, model, evaluator, config)
-
     accuracy, anls = np.mean(accuracy_list), np.mean(anls_list)
 
     inf_time = time_stamp_to_hhmmss(time.time() - start_time, string=True)
@@ -104,8 +103,7 @@ def main_eval(config):
         "Scores by samples": scores_by_samples,
     }
 
-    experiment_date = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-    results_file = os.path.join(config.save_dir, 'results', "{:}_{:}_{:}__{:}.json".format(config.model_name, config.dataset_name, getattr(config, 'page_retrieval', '').lower(), experiment_date))
+    results_file = os.path.join(config.save_dir, 'results', config.experiment_name)
     save_json(results_file, save_data)
 
     print("Results correctly saved in: {:s}".format(results_file))

@@ -1,6 +1,4 @@
-
 import os, random
-import utils
 from PIL import Image
 from torch.utils.data import Dataset
 
@@ -31,28 +29,11 @@ class PFL_DocVQA(Dataset):
     def __len__(self):
         return len(self.imdb)  #  min(20, len(self.imdb))
 
-    # def sample(self, idx=None, question_id=None):
-    #     if idx is not None:
-    #         return self.__getitem__(idx)
-    #
-    #     if question_id is not None:
-    #         for idx in range(self.__len__()):
-    #             record = self.imdb[idx]
-    #             if record['question_id'] == question_id:
-    #                 return self.__getitem__(idx)
-    #
-    #         raise ValueError("Question ID {:d} not in dataset.".format(question_id))
-    #
-    #     idx = random.randint(0, self.__len__())
-    #     return self.__getitem__(idx)
-
     def __getitem__(self, idx):
         record = self.imdb[idx]
 
         question = record["question"]
         answers = [record['answers'].lower()]
-        # answer_page_idx = record['answer_page_idx']
-
         context = " ".join([word.lower() for word in record['ocr_tokens']])
 
         if self.get_raw_ocr_data:
@@ -69,7 +50,6 @@ class PFL_DocVQA(Dataset):
             images = Image.open(image_names).convert("RGB")
 
         sample_info = {
-            # 'question_id': "{:s}_{:d}".format(record['set_name'], idx),
             'question_id': record.get('question_id', "{:s}-{:d}".format(record['set_name'], idx)),
             'questions': question,
             'contexts': context,
@@ -85,27 +65,6 @@ class PFL_DocVQA(Dataset):
             sample_info['boxes'] = boxes
 
         return sample_info
-
-    def _get_start_end_idx(self, context, answers):
-        if answers is None:
-            start_idx = [0 for _ in range(len(context))]
-            end_idx = [0 for _ in range(len(context))]
-
-        else:
-            answer_positions = []
-            for answer in answers:
-                start_idx = context.find(answer)
-
-                if start_idx != -1:
-                    end_idx = start_idx + len(answer)
-                    answer_positions.append([start_idx, end_idx])
-
-            if len(answer_positions) > 0:
-                start_idx, end_idx = random.choice(answer_positions)  # If both answers are in the context. Choose one randomly.
-            else:
-                start_idx, end_idx = 0, 0  # If the indices are out of the sequence length they are ignored. Therefore, we set them as a very big number.
-
-        return start_idx, end_idx
 
 
 def collate_fn(batch):

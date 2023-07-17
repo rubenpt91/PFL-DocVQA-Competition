@@ -122,7 +122,7 @@ def check_config(config):
             os.makedirs(os.path.join(config.save_dir, 'communication_logs'))
 
     experiment_date = datetime.datetime.now().strftime('%Y.%m.%d_%H.%M.%S')
-    config.experiment_name = "{:s}__{:}".format(config.model_name, experiment_date)
+    config.experiment_name = "{:s}_{:s}{:s}__{:}".format(config.model_name, config.dataset_name, '_dp' if config.use_dp else '', experiment_date)
 
     return True
 
