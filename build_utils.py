@@ -35,7 +35,7 @@ def build_model(config):
         model = T5(config)
 
     elif config.model_name.lower() == 'vt5':
-        from models.VT5 import ProxyVT5 as VT5
+        from models.VT5 import VT5
         model = VT5(config)
 
     else:

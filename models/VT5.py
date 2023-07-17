@@ -5,20 +5,33 @@ from utils import save_yaml
 import torch
 import torch.nn as nn
 from transformers import T5Tokenizer, T5ForConditionalGeneration
+from transformers import PreTrainedModel
 from models._modules import CustomT5Config, SpatialEmbeddings, VisualEmbeddings
 import models._model_utils as model_utils
 import transformers.models.t5.modeling_t5
 
 
-class ProxyVT5:
+# class HF_VT5(PreTrainedModel):
+class HF_VT5(PreTrainedModel):
+
+    def __init__(self, t5_config):
+        super().__init__(t5_config)
+
+        self.language_backbone = T5ForConditionalGeneration(t5_config)
+        self.spatial_embedding = SpatialEmbeddings(t5_config)
+        self.visual_embedding = VisualEmbeddings(t5_config)
+
+
+class VT5:
     def __init__(self, config):
         self.max_input_tokens = getattr(config, 'max_input_tokens', 512)
 
         t5_config = CustomT5Config.from_pretrained(config.model_weights)
         t5_config.visual_module_config = config.visual_module
-        self.spatial_embedding = SpatialEmbeddings(t5_config).to(config.device)
-        self.visual_embedding = VisualEmbeddings(t5_config).to(config.device)
-        self.load_model(config.model_weights)
+
+        self.tokenizer = T5Tokenizer.from_pretrained(config.model_weights)
+        self.model = HF_VT5.from_pretrained(config.model_weights, config=t5_config)
+        # self.load_model(config.model_weights)
 
     def prepare_inputs_for_vqa(self, question, words, boxes, images, answers=None):
         bs = len(words)
@@ -69,9 +82,9 @@ class ProxyVT5:
         tensor_attention_mask = tensor_attention_mask.to(self.model.device)
 
         # Get semantic and spatial embeddings
-        semantic_embedding = self.model.shared(tensor_input_ids)
-        spatial_embedding = self.spatial_embedding(tensor_boxes)
-        visual_embedding, visual_emb_mask = self.visual_embedding(images)
+        semantic_embedding = self.model.language_backbone.shared(tensor_input_ids)
+        spatial_embedding = self.model.spatial_embedding(tensor_boxes)
+        visual_embedding, visual_emb_mask = self.model.visual_embedding(images)
 
         # input_embeds = semantic_embedding
         input_embeds = torch.add(semantic_embedding, spatial_embedding)
@@ -104,70 +117,14 @@ class ProxyVT5:
         answers = batch['answers']
 
         input_embeds, attention_mask, labels = self.prepare_inputs_for_vqa(question, words, boxes, images, answers)
-        outputs = self.model(inputs_embeds=input_embeds, attention_mask=attention_mask, labels=labels)
+        outputs = self.model.language_backbone(inputs_embeds=input_embeds, attention_mask=attention_mask, labels=labels)
         pred_answers, pred_answers_conf = self.get_answer_from_model_output(input_embeds, attention_mask) if return_pred_answer else None
 
         return outputs, pred_answers, pred_answers_conf
 
     def get_answer_from_model_output(self, input_embeds, attention_mask):
-        output = self.model.generate(inputs_embeds=input_embeds, attention_mask=attention_mask, output_scores=True, return_dict_in_generate=True, output_attentions=True)
+        output = self.model.language_backbone.generate(inputs_embeds=input_embeds, attention_mask=attention_mask, output_scores=True, return_dict_in_generate=True, output_attentions=True)
         pred_answers = self.tokenizer.batch_decode(output['sequences'], skip_special_tokens=True)
         pred_answers_conf = model_utils.get_generative_confidence(output)
 
         return pred_answers, pred_answers_conf
-
-    def save_model(self, save_dir, round, kwargs, update_best):
-
-        # Save language part.
-        self.model.save_pretrained(os.path.join(save_dir, "round_{:d}.ckpt".format(round), "lm_model"))
-        self.tokenizer.save_pretrained(os.path.join(save_dir, "round_{:d}.ckpt".format(round), "lm_model"))
-
-        # Save spatial embedding.
-        torch.save(self.spatial_embedding.state_dict(), os.path.join(save_dir, "round_{:d}.ckpt".format(round), "sp_emb".format(round)))
-
-        # Save visual embedding.
-        self.visual_embedding.image_model.save_pretrained(os.path.join(save_dir, "round_{:d}.ckpt".format(round), "vm_model"))
-        self.visual_embedding.feature_extractor.save_pretrained(os.path.join(save_dir, "round_{:d}.ckpt".format(round), "vm_model"))
-        torch.save(self.visual_embedding.visual_emb_matcher.state_dict(), os.path.join(save_dir, "round_{:d}.ckpt".format(round), "vm_model", "emb_mlp"))
-
-        # Save config
-        save_yaml(os.path.join(save_dir, "round_{:d}.ckpt".format(round), "experiment_config.yml"), kwargs)
-        shutil.copy(os.path.join(save_dir, "round_{:d}.ckpt".format(round), "lm_model", "config.json"), os.path.join(save_dir, "round_{:d}.ckpt".format(round), "config.json"))
-
-        if update_best:
-            # Save language part.
-            self.model.save_pretrained(os.path.join(save_dir, "best.ckpt", "lm_model"))
-            self.tokenizer.save_pretrained(os.path.join(save_dir, "best.ckpt", "lm_model"))
-
-            # Save spatial embedding.
-            torch.save(self.spatial_embedding.state_dict(), os.path.join(save_dir, "best.ckpt", "sp_emb"))
-
-            # Save visual embedding.
-            self.visual_embedding.image_model.save_pretrained(os.path.join(save_dir, "best.ckpt", "vm_model"))
-            self.visual_embedding.feature_extractor.save_pretrained(os.path.join(save_dir, "best.ckpt", "vm_model"))
-            torch.save(self.visual_embedding.visual_emb_matcher.state_dict(), os.path.join(save_dir, "best.ckpt", "vm_model", "emb_mlp"))
-
-            # Save config
-            shutil.copy(os.path.join(save_dir, "best.ckpt", "lm_model", "config.json"), os.path.join(save_dir, "best.ckpt", "config.json"))
-            save_yaml(os.path.join(save_dir, "best.ckpt", "experiment_config.yml"), kwargs)
-
-    def load_model(self, load_weights):
-
-        # Load local weights
-        if load_weights.endswith('.ckpt'):
-            # Load language part.
-            self.tokenizer = T5Tokenizer.from_pretrained(os.path.join(load_weights, "lm_model"))
-            self.model = T5ForConditionalGeneration.from_pretrained(os.path.join(load_weights, "lm_model"))
-
-            # Load spatial embedding.
-            self.spatial_embedding.load_state_dict(torch.load(os.path.join(load_weights, "sp_emb")))
-
-            # Load visual embedding.
-            self.visual_embedding.image_model.from_pretrained(os.path.join(load_weights, "vm_model"))
-            self.visual_embedding.feature_extractor.from_pretrained(os.path.join(load_weights, "vm_model"))
-            self.visual_embedding.visual_emb_matcher.load_state_dict(torch.load(os.path.join(load_weights, "vm_model", "emb_mlp")))
-
-        # Load weights directly from Huggingface
-        else:
-            self.tokenizer = T5Tokenizer.from_pretrained(load_weights)
-            self.model = T5ForConditionalGeneration.from_pretrained(load_weights)
