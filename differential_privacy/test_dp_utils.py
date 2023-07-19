@@ -59,10 +59,10 @@ def test_restore_frozen_weights():
     parameters = copy.deepcopy(list(model.model.state_dict().values()))
 
     keyed_parameters = {n: p.requires_grad for n, p in model.model.named_parameters()}
-    frozen_parameters = [not keyed_parameters[n] if n in keyed_parameters else True for n, p in model.model.state_dict().items()]
+    frozen_parameters = [not keyed_parameters[n] if n in keyed_parameters else False for n, p in model.model.state_dict().items()]
 
     dataset = build_dataset(config, split="val")
-    data_loader = DataLoader(dataset, collate_fn=collate_fn)
+    data_loader = DataLoader(dataset, batch_size=1, collate_fn=collate_fn)
 
     # Do a step:
     for batch in data_loader:
@@ -81,9 +81,22 @@ def test_restore_frozen_weights():
     assert max([upd.sum().item() for upd, params, is_frozen in zip(new_update, parameters, frozen_parameters) if is_frozen]) == 0
 
     # If previous assert fails, this can help us visualize the error.
-    # param_keys = list(model.model.state_dict().keys())
-    # for k, upd, params, is_frozen in zip(param_keys, new_update, parameters, frozen_parameters):
-    #     print(k, upd.max().item(), is_frozen)
+    param_keys = list(model.model.state_dict().keys())
+    for k, upd, params, is_frozen in zip(param_keys, new_update, parameters, frozen_parameters):
+        if upd.sum().item() != 0 and is_frozen:
+            print('\n\t', k, upd.max().item(), is_frozen, '\n')
+        else:
+            print(k, upd.sum().item(), is_frozen)
+
+    assert torch.all([torch.all(torch.eq(new_param, original_param)).item() if is_frozen else not torch.all(torch.eq(new_param, original_param)).item() for new_param, original_param, is_frozen in zip(list(model.model.state_dict().values()), parameters, frozen_parameters)])
+
+    for k, upd, original_param, is_frozen in zip(param_keys, list(model.model.state_dict().values()), parameters, frozen_parameters):
+        equal_params = torch.all(torch.eq(upd, original_param)).item()
+        if is_frozen and not equal_params:
+            print(k, equal_params, is_frozen)
+
+        if not is_frozen and equal_params:
+            print(k, equal_params, is_frozen)
 
     shapes = get_shape(new_update)
     new_update = flatten_params(new_update)
@@ -99,9 +112,13 @@ def test_restore_frozen_weights():
     agg_update = reconstruct_shape(agg_update, shapes)
 
     # Restore original weights (without noise) from frozen layers.
-    final_update = [upd if not is_frozen else params for upd, params, is_frozen in zip(agg_update, parameters, frozen_parameters)]
+    agg_upd = [upd if not is_frozen else params for upd, params, is_frozen in zip(agg_update, parameters, frozen_parameters)]
 
-    assert all([torch.all(params == new_params).item() == is_frozen for params, new_params, is_frozen in zip(parameters, final_update, frozen_parameters)])
+    assert all([torch.all(params == new_params).item() == is_frozen for params, new_params, is_frozen in zip(parameters, agg_upd, frozen_parameters)])
+
+    upd_weights = [torch.add(agg_upd, w_0).cpu() for agg_upd, w_0 in zip(agg_update, copy.deepcopy(parameters))]
+
+    assert torch.all([torch.all(torch.eq(new_param, original_param)).item() if is_frozen else not torch.all(torch.eq(new_param, original_param)).item() for new_param, original_param, is_frozen in zip(upd_weights, parameters, frozen_parameters)])
 
 
 if __name__ == '__main__':
