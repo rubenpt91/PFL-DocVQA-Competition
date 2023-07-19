@@ -10,6 +10,8 @@ Automatically managing the information of document workflows is a core aspect of
 Reasoning over the information extracted from documents fuels subsequent decision-making processes that can directly affect humans, especially in sectors such as finance, legal or insurance.
 At the same time, documents tend to contain private information, restricting access to them during training.
 This common scenario requires training large-scale models over private and widely distributed data.
+
+Please, if you plan to participate in the Competition, read the [participation instructions](https://benchmarks.elsa-ai.eu/?ch=2&com=tasks#participating_rules) carefully.
 </div>
 
 ## How to use
@@ -18,9 +20,16 @@ To set up and use the framework please check [How to use](framework_documentatio
 
 ## Dataset
 
-[TODO] Dataset Description.
+<div style="text-align: justify;">
+The dataset is split into Blue and Red data. Moreover, the Blue training set is further divided into 10 different clients.
+The whole dataset comprises around 1M question-answer pairs on 109,727 document images from 6,574 unique providers.
+In this competition, we will only use a reasonable set of the full dataset. 251,810 question-answer pairs are available for training and validation, while 43,591 pairs will be used for testing.
+The rest of the dataset will be available after the competition period.
 
-If you want to download the dataset, you can do so in the [ELSA Benchmarks Competition platform](http://158.109.8.94/?ch=2&com=introduction). For this framework, you will need to download the IMDBs (which contains processed QAs and OCR) and the images. All the downloads must be performed through the RRC portal.
+If you want to download the dataset, you can do so in the [ELSA Benchmarks Competition platform](http://158.109.8.94/?ch=2&com=introduction).
+For this framework, you will need to download the IMDBs (which contains processed QAs and OCR) and the images.
+All the downloads must be performed through the RRC portal.
+</div>
 
 | Dataset    | Link                                        |
 |------------|---------------------------------------------|
@@ -29,9 +38,13 @@ If you want to download the dataset, you can do so in the [ELSA Benchmarks Compe
 
 ## PFL-DocVQA models weights
 
-| Model    |                                  Weights link                                  | Parameters  |
-|:---------|:------------------------------------------------------------------------------:|:-----------:|
-| VT5 base | [weights](https://datasets.cvc.uab.es/elsa/PFL-DocVQA/vt5_mp-docvqa.ckpt.zip)  |             | 
+<div style="text-align: justify;">
+We provide pre-trained weights on SP-DocVQA dataset to allow the particiapnts start from a common starting point. 
+</div>
+
+| Model    |                                 Weights HF name                                  | Parameters |
+|:---------|:------------------------------------------------------------------------------:|:----------:|
+| VT5 base | [rubentito/vt5-base-spdocvqa](https://huggingface.co/rubentito/vt5-base-spdocvqa)  |   316M     | 
 
 ## Metrics
 
