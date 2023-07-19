@@ -47,19 +47,44 @@ def test_clip_parameters():
 def test_restore_frozen_weights():
 
     import copy
+    from torch.utils.data import DataLoader
+    from datasets.PFL_DocVQA import collate_fn
     from utils import  parse_args, load_config
-    from build_utils import build_model
+    from build_utils import build_model, build_dataset, build_optimizer
     args = parse_args()
     config = load_config(args)
 
     model = build_model(config)
+    optimizer = build_optimizer(model, config)
     parameters = copy.deepcopy(list(model.model.state_dict().values()))
 
     keyed_parameters = {n: p.requires_grad for n, p in model.model.named_parameters()}
-    frozen_parameters = [keyed_parameters[n] if n in keyed_parameters else True for n, p in model.model.state_dict().items()]
+    frozen_parameters = [not keyed_parameters[n] if n in keyed_parameters else True for n, p in model.model.state_dict().items()]
 
-    agg_update = None
+    dataset = build_dataset(config, split="val")
+    data_loader = DataLoader(dataset, collate_fn=collate_fn)
+
+    # Do a step:
+    for batch in data_loader:
+        outputs, pred_answers, answer_conf = model.forward(batch, return_pred_answer=True)
+        loss = outputs.loss
+        loss.backward()
+
+        optimizer.step()
+        optimizer.zero_grad()
+
+        break
+
     new_update = [w - w_0 for w, w_0 in zip(list(model.model.state_dict().values()), parameters)]  # Get model update
+
+    # All the updates of frozen layers are equal to 0
+    assert max([upd.sum().item() for upd, params, is_frozen in zip(new_update, parameters, frozen_parameters) if is_frozen]) == 0
+
+    # If previous assert fails, this can help us visualize the error.
+    # param_keys = list(model.model.state_dict().keys())
+    # for k, upd, params, is_frozen in zip(param_keys, new_update, parameters, frozen_parameters):
+    #     print(k, upd.max().item(), is_frozen)
+
     shapes = get_shape(new_update)
     new_update = flatten_params(new_update)
     new_update = clip_parameters(new_update, clip_norm=config.dp_params.sensitivity)
@@ -84,4 +109,4 @@ if __name__ == '__main__':
     test_flatten_params()
     test_flatten_reconstruct_params()
     test_clip_parameters()
-    # test_restore_frozen_weights()
+    test_restore_frozen_weights()

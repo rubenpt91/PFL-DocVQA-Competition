@@ -33,7 +33,7 @@ def fl_train(data_loaders, model, optimizer, evaluator, logger, client_id, fl_co
     parameters = copy.deepcopy(list(model.model.state_dict().values()))
 
     keyed_parameters = {n: p.requires_grad for n, p in model.model.named_parameters()}
-    frozen_parameters = [keyed_parameters[n] if n in keyed_parameters else True for n, p in model.model.state_dict().items()]
+    frozen_parameters = [not keyed_parameters[n] if n in keyed_parameters else True for n, p in model.model.state_dict().items()]
 
     logger.current_epoch += 1
 
@@ -65,7 +65,7 @@ def fl_train(data_loaders, model, optimizer, evaluator, logger, client_id, fl_co
 
                 gt_answers = batch['answers']
                 outputs, pred_answers, answer_conf = model.forward(batch, return_pred_answer=True)
-                loss = outputs.loss + outputs.ret_loss if hasattr(outputs, 'ret_loss') else outputs.loss
+                loss = outputs.loss
 
                 # total_loss += loss.item() / len(batch['question_id'])
                 loss.backward()
