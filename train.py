@@ -33,7 +33,7 @@ def fl_train(data_loaders, model, optimizer, evaluator, logger, client_id, fl_co
     parameters = copy.deepcopy(list(model.model.state_dict().values()))
 
     keyed_parameters = {n: p.requires_grad for n, p in model.model.named_parameters()}
-    frozen_parameters = [not keyed_parameters[n] if n in keyed_parameters else True for n, p in model.model.state_dict().items()]
+    frozen_parameters = [not keyed_parameters[n] if n in keyed_parameters else False for n, p in model.model.state_dict().items()]
 
     logger.current_epoch += 1
 
@@ -119,7 +119,7 @@ def fl_train(data_loaders, model, optimizer, evaluator, logger, client_id, fl_co
         agg_update = reconstruct_shape(agg_update, shapes)
 
         # Restore original weights (without noise) from frozen layers.
-        agg_update = [upd if not is_frozen else params for upd, params, is_frozen in zip(agg_update, parameters, frozen_parameters)]
+        agg_update = [upd if not is_frozen else 0 for upd, params, is_frozen in zip(agg_update, parameters, frozen_parameters)]
 
         # all([torch.all(params == new_params).item() == is_frozen for params, new_params, is_frozen in zip(parameters, agg_update, frozen_parameters)])  Restoration Test
 
