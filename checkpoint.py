@@ -3,10 +3,7 @@ from utils import save_yaml
 
 
 def save_model(model, epoch, kwargs, update_best=False):
-    save_dir = os.path.join(kwargs.save_dir, 'checkpoints', "{:s}_{:s}".format(kwargs.model_name.lower(), kwargs.dataset_name.lower()))
-
-    if getattr(kwargs, 'use_dp', False):
-        save_dir += '_dp'
+    save_dir = os.path.join(kwargs.save_dir, 'checkpoints', "{:s}".format(kwargs.experiment_name))
 
     model.model.save_pretrained(os.path.join(save_dir, "model__{:d}.ckpt".format(epoch)))
 
