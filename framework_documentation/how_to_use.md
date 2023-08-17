@@ -36,6 +36,19 @@ Then, you need to manually install Ray library (due to some incompatibility issu
 $ (pfl_docvqa) pip install ray==1.11
 ```
 
+You will see the following error message, but you can ignore it. <br> <span style="color:firebrick">ERROR: pip's dependency resolver does not currently take into account all the packages that are installed. This behaviour is the source of the following dependency conflicts.
+flwr 1.4.0 requires grpcio!=1.52.0,<2.0.0,>=1.48.2, but you have grpcio 1.43.0 which is incompatible.</span>.
+
+To check that the proper ray version is installed, print the libarary version.
+
+```bash
+$ (pfl_docvqa) python
+```
+```python
+import ray
+print(ray.__version__)  # Output: 1.11.0
+```
+
 ## Download dataset
 
 1. Download the dataset from the [ELSA Benchmarks Platform](https://benchmarks.elsa-ai.eu/?ch=2&com=downloads).

@@ -126,7 +126,8 @@ def fl_train(data_loaders, model, optimizer, evaluator, logger, client_id, fl_co
     else:
         agg_update = new_update
 
-    upd_weights = [torch.add(agg_upd, w_0).cpu() for agg_upd, w_0 in zip(agg_update, copy.deepcopy(parameters))]
+    # upd_weights = [torch.add(agg_upd, w_0).cpu() for agg_upd, w_0 in zip(agg_update, copy.deepcopy(parameters))]  # Send all weights
+    upd_weights = [torch.add(agg_upd, w_0).cpu() for agg_upd, w_0, is_frozen in zip(agg_update, copy.deepcopy(parameters), frozen_parameters) if not is_frozen]  # Send weights of NON-Frozen layers.
 
     pbar.close()
 
@@ -141,8 +142,8 @@ def fl_train(data_loaders, model, optimizer, evaluator, logger, client_id, fl_co
 
     # if fl_config["log_path"] is not None:
     if config.flower:
-        # log_communication(federated_round=fl_config["current_round"], sender=client_id, receiver=-1, data=parameters, log_location=fl_config["log_path"])
-        log_communication(federated_round=fl_config.current_round, sender=client_id, receiver=-1, data=parameters, log_location=logger.comms_log_file)
+        # log_communication(federated_round=fl_config.current_round, sender=client_id, receiver=-1, data=upd_weights, log_location=logger.comms_log_file)  # Store model's weights bytes.
+        log_communication(federated_round=fl_config.current_round, sender=client_id, receiver=-1, data=upd_weights, log_location=logger.comms_log_file)  # Store only communicated weights (sent parameters).
 
     # Send the weights to the server
     return upd_weights
@@ -169,13 +170,14 @@ class FlowerClient(fl.client.NumPyClient):
         return updated_weigths, 1, {}  # TODO 1 ==> Number of selected clients.
 
     def set_parameters(self, model, parameters, config):
-        params_dict = zip(model.model.state_dict().keys(), parameters)
-        state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
+        set_parameters_model(model, parameters)  # Use standard set_parameters model function.
+        # params_dict = zip(model.model.state_dict().keys(), parameters)
+        # state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
         log_communication(federated_round=config.current_round, sender=-1, receiver=self.client_id, data=parameters, log_location=self.logger.comms_log_file)
 
-        model.model.load_state_dict(state_dict, strict=True)
+        # model.model.load_state_dict(state_dict, strict=True)
 
-    # The `evaluate` function will be by Flower called after every round
+    # The `evaluate` function will be called by Flower after every round
     def evaluate(self, parameters, config):
         set_parameters_model(self.model, parameters)
         accuracy, anls, _, _ = evaluate(self.valloader, self.model, self.evaluator, config)  # data_loader, model, evaluator, **kwargs
