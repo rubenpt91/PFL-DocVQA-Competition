@@ -51,3 +51,14 @@ We provide pre-trained weights on SP-DocVQA dataset to allow the particiapnts st
 **Average Normalized Levenshtein Similarity (ANLS)** <br>
 The standard metric for text-based VQA tasks (ST-VQA and DocVQA). It evaluates the method's reasoning capabilities while smoothly penalizes OCR recognition errors. <br>
 Check [Scene Text Visual Question Answering](https://arxiv.org/abs/1905.13648) for more details.
+
+## Citation
+If you use this code, please cite our [paper](https://arxiv.org/pdf/2312.10108.pdf).
+```
+@article{tito2023privacy,
+  title={Privacy-Aware Document Visual Question Answering},
+  author={Tito, Rub{\`e}n and Nguyen, Khanh and Tobaben, Marlon and Kerkouche, Raouf and Souibgui, Mohamed Ali and Jung, Kangsoo and Kang, Lei and Valveny, Ernest and Honkela, Antti and Fritz, Mario and others},
+  journal={arXiv preprint arXiv:2312.10108},
+  year={2023}
+}
+```
