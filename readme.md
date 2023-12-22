@@ -57,7 +57,7 @@ If you use this dataset or code, please cite our [paper](https://arxiv.org/pdf/2
 ```
 @article{tito2023privacy,
   title={Privacy-Aware Document Visual Question Answering},
-  author={Tito, Rub{\`e}n and Nguyen, Khanh and Tobaben, Marlon and Kerkouche, Raouf and Souibgui, Mohamed Ali and Jung, Kangsoo and Kang, Lei and Valveny, Ernest and Honkela, Antti and Fritz, Mario and others},
+  author={Tito, Rub{\`e}n and Nguyen, Khanh and Tobaben, Marlon and Kerkouche, Raouf and Souibgui, Mohamed Ali and Jung, Kangsoo and Kang, Lei and Valveny, Ernest and Honkela, Antti and Fritz, Mario and Karatzas, Dimosthenis},
   journal={arXiv preprint arXiv:2312.10108},
   year={2023}
 }
