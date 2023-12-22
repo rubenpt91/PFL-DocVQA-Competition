@@ -53,7 +53,7 @@ The standard metric for text-based VQA tasks (ST-VQA and DocVQA). It evaluates t
 Check [Scene Text Visual Question Answering](https://arxiv.org/abs/1905.13648) for more details.
 
 ## Citation
-If you use this code, please cite our [paper](https://arxiv.org/pdf/2312.10108.pdf).
+If you use this dataset or code, please cite our [paper](https://arxiv.org/pdf/2312.10108.pdf).
 ```
 @article{tito2023privacy,
   title={Privacy-Aware Document Visual Question Answering},
