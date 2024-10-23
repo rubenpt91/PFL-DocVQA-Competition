@@ -57,8 +57,14 @@ If you use this dataset or code, please cite our [paper](https://arxiv.org/pdf/2
 ```
 @article{tito2023privacy,
   title={Privacy-Aware Document Visual Question Answering},
-  author={Tito, Rub{\`e}n and Nguyen, Khanh and Tobaben, Marlon and Kerkouche, Raouf and Souibgui, Mohamed Ali and Jung, Kangsoo and Kang, Lei and Valveny, Ernest and Honkela, Antti and Fritz, Mario and Karatzas, Dimosthenis},
-  journal={arXiv preprint arXiv:2312.10108},
-  year={2023}
+  author={Rub{\`{e}}n Tito and Khanh Nguyen and Marlon Tobaben and Raouf Kerkouche and Mohamed Ali Souibgui and Kangsoo Jung and Joonas J{\"{a}}lk{\"{o}} and Vincent Poulain D'Andecy and Aur{\'{e}}lie Joseph and Lei Kang and Ernest Valveny and Antti Honkela and Mario Fritz and Dimosthenis Karatzas},
+  booktitle    = {Document Analysis and Recognition - {ICDAR} 2024 - 18th International Conference, Athens, Greece, August 30 - September 4, 2024, Proceedings, Part {VI}},
+  series       = {Lecture Notes in Computer Science},
+  volume       = {14809},
+  pages        = {199--218},
+  publisher    = {Springer},
+  year         = {2024},
+  url          = {https://doi.org/10.1007/978-3-031-70552-6\_12},
+  doi          = {10.1007/978-3-031-70552-6\_12}
 }
 ```
